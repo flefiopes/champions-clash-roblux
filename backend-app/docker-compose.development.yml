@@ -1,0 +1,80 @@
+
+
+services:
+  api-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.development
+    container_name: champions-clash-api-dev
+    ports:
+      - "3000:3000"
+    volumes:
+      # Bind mount entire project for hot reload
+      - .:/app
+      # Anonymous volume to prevent local node_modules from overwriting container's
+      - /app/node_modules
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: development
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - champions-clash-network
+  
+  mysql:
+    image: mysql:lts
+    container_name: champions-clash-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DATABASE_PASSWORD}
+      MYSQL_DATABASE: ${DATABASE_NAME}
+      MYSQL_USER: ${DATABASE_USER}
+      MYSQL_PASSWORD: ${DATABASE_PASSWORD}
+    ports:
+      - "${DATABASE_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - champions-clash-network
+
+  # Redis
+  redis:
+    image: redis:alpine
+    container_name: champions-clash-redis
+    restart: unless-stopped
+    command: >
+      sh -c "if [ -n \"$$REDIS_PASSWORD\" ]; then
+        redis-server --requirepass $$REDIS_PASSWORD;
+      else
+        redis-server;
+      fi"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - champions-clash-network
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  champions-clash-network:
+    driver: bridge

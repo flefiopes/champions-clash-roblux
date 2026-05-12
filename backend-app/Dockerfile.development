@@ -1,0 +1,17 @@
+FROM oven/bun:1-alpine
+
+WORKDIR /app
+
+# Copy package files and install dependencies
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
+
+COPY . .
+
+EXPOSE 3000
+
+# Development: single process with hot reload (NODE_ENV=development)
+# Volume mounts from docker-compose handle code synchronization
+ENV NODE_ENV=development
+
+CMD ["bun", "run", "--hot", "src/index.ts"]

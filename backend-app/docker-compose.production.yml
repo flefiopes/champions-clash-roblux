@@ -14,7 +14,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/v1/health"]
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:3000/api/v1/health" ]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -24,10 +24,10 @@ services:
     container_name: template-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${DATABASE_PASSWORD}
       MYSQL_DATABASE: ${DATABASE_NAME}
       MYSQL_USER: ${DATABASE_USER}
       MYSQL_PASSWORD: ${DATABASE_PASSWORD}
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
     ports:
       - "${DATABASE_PORT:-3306}:3306"
     volumes:

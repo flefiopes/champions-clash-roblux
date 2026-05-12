@@ -1,5 +1,5 @@
 /**
- * Template API — Application Entry Point.
+ * Champions Clash API — Application Entry Point.
  * Initializes ElysiaJS server with all middleware, security, and routes.
  * Provides graceful shutdown handling for all connections.
  * Supports multi-CPU scaling via Node.js clustering.
@@ -23,7 +23,7 @@ import { closeRedis } from '@/lib/redis';
 import { closeQueues } from '@/lib/queue';
 import { initDatabase, closeDatabase } from '@/db';
 import { apiRoutes } from '@/routes';
-import { startCronWorker, startSampleWorker } from '@/workers';
+import { startCronWorker } from '@/workers';
 import { AppError } from '@/lib/app-error';
 import console from 'node:console';
 import { formatErrorResponse } from './lib/response-helpers';
@@ -49,9 +49,9 @@ export function createApp() {
         path: '/api/swagger',
         documentation: {
           info: {
-            title: 'Template API',
-            version: '0.0.1',
-            description: 'Production-ready Elysia + Bun API template',
+            title: 'Champions Clash API',
+            version: '1.0.0',
+            description: 'Backend API for Champions Clash 2027 — competitive Roblox faction game',
           },
         },
       })
@@ -163,9 +163,9 @@ export function createApp() {
      * Root endpoint — API information.
      */
     .get('/', () => ({
-      name: 'Template API',
+      name: 'Champions Clash API',
       message: 'API is running',
-      version: '0.0.1',
+      version: '1.0.0',
     }))
 
     /**
@@ -186,7 +186,7 @@ async function main() {
   const rootLogger = getLogger();
   const workerId = cluster.isPrimary ? 'primary' : process.pid;
 
-  rootLogger.info({ nodeEnv: env.nodeEnv, workerId }, 'Starting Template API Server');
+  rootLogger.info({ nodeEnv: env.nodeEnv, workerId }, 'Starting Champions Clash API Server');
 
   await initDatabase();
 
@@ -197,9 +197,6 @@ async function main() {
   if (shouldRunCrons) {
     startCronWorker();
     rootLogger.info({ workerId }, 'Cron worker started');
-
-    startSampleWorker();
-    rootLogger.info({ workerId }, 'Sample worker started');
   }
 
   // Create and configure app
@@ -248,7 +245,6 @@ async function main() {
  * Forks worker processes based on available CPU cores.
  */
 function startClusterPrimary() {
-  const env = getEnvConfig();
   const rootLogger = getLogger();
   const numCpus = os.availableParallelism();
 

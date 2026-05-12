@@ -1,0 +1,107 @@
+/* Google Fonts — Inter */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+/**
+ * Global stylesheet — TailwindCSS 4 entry point with PrimeVue integration.
+ * Defines the cream/warm light theme palette and base styles.
+ */
+@import "tailwindcss";
+
+@plugin 'tailwindcss-primeui';
+
+/* Cream theme custom properties */
+@theme {
+  --color-cream-50: #fefcf8;
+  --color-cream-100: #fdf8ee;
+  --color-cream-200: #faf1dd;
+  --color-cream-300: #f5e6c4;
+  --color-cream-400: #eedba5;
+  --color-cream-500: #d9c08c;
+  --color-cream-600: #b89e68;
+  --color-cream-700: #8f7a4e;
+  --color-cream-800: #665737;
+  --color-cream-900: #3d3421;
+
+  --color-warm-50: #fffcf5;
+  --color-warm-100: #fff8e7;
+  --color-warm-200: #fff0cc;
+  --color-warm-300: #ffe4a3;
+  --color-warm-400: #ffd470;
+  --color-warm-500: #f0b429;
+  --color-warm-600: #d19a1d;
+  --color-warm-700: #a37716;
+  --color-warm-800: #7a5a12;
+  --color-warm-900: #523d0f;
+}
+
+/* Base styles */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: "Inter", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: var(--color-cream-50);
+    color: var(--color-cream-900);
+  }
+}
+
+/* PrimeVue Dark Mode Overrides for Admin Dashboard (Slate Theme) */
+.p-dark {
+  --p-content-background: #0f172a;
+  /* slate-900 */
+  --p-primary-color: #6366f1;
+  /* indigo-500 */
+  --p-mask-background: rgba(2, 6, 23, 0.8);
+  /* slate-950 with alpha */
+
+  /* Datatable specific - Complete fix for header and footer */
+  --p-datatable-header-background: #0f172a;
+  --p-datatable-column-header-background: #0f172a;
+  --p-datatable-row-background: transparent;
+  --p-datatable-row-hover-background: #1e293b;
+  /* slate-800 */
+  --p-datatable-footer-background: #0f172a;
+  --p-datatable-paginator-background: #0f172a;
+  --p-datatable-border-color: #1e293b;
+  --p-datatable-body-cell-border-color: #1e293b;
+  --p-datatable-column-header-border-color: #1e293b;
+  --p-datatable-header-border-color: #1e293b;
+  --p-datatable-footer-border-color: #1e293b;
+
+  /* Paginator specific buttons and icons */
+  --p-paginator-background: #0f172a;
+  --p-paginator-border-color: #1e293b;
+  --p-paginator-item-color: #94a3b8;
+  /* slate-400 */
+  --p-paginator-item-hover-background: #1e293b;
+  --p-paginator-item-selected-background: #312e81;
+  /* indigo-900 */
+  --p-paginator-item-selected-color: #ffffff;
+
+  /* Dialogs / Modals */
+  --p-dialog-background: #0f172a;
+  --p-dialog-border-color: #1e293b;
+  --p-dialog-header-color: #ffffff;
+  --p-dialog-content-color: #e2e8f0;
+
+  /* Inputs */
+  --p-inputtext-background: #020617;
+  /* slate-950 */
+  --p-inputtext-border-color: #1e293b;
+  --p-inputtext-color: #ffffff;
+  --p-inputtext-focus-border-color: #6366f1;
+  /* indigo-500 */
+
+  /* Select / Dropdown (used in pagination rows per page) */
+  --p-select-background: #020617;
+  --p-select-border-color: #1e293b;
+  --p-select-color: #ffffff;
+  --p-select-overlay-background: #0f172a;
+}
+
+button {
+  cursor: pointer;
+}

@@ -1,82 +1,35 @@
 /**
- * Database Seeding Script.
- * Inserts default admin and test users into the database.
- * Run via: bun run db:seed
- *
- * @module scripts/seed
+ * Database seed script.
+ * Can be used to inject initial game configuration, default products,
+ * or mock data into the database for local development.
  */
 
-import { initDatabase, closeDatabase, getDatabase } from "@/db";
-import { users } from "@/db/schema/users";
-import { encryptEmail, computeBlindIndex } from "@/services/auth/email-crypto.service";
-import { hashPassword } from "@/services/auth/password.service";
-import { randomUUID } from "node:crypto";
-import { getLogger } from "@/lib/logger";
+import { getDatabase, initDatabase, closeDatabase } from '@/db';
+import { getLogger } from '@/lib/logger';
+import { gameConfig } from '@/db/schema';
 
 const logger = getLogger();
 
-async function seed() {
-  logger.info("Starting database seeding process...");
-
-  initDatabase();
-  // Initialize DB connection
+async function runSeed() {
+  logger.info('Starting database seed...');
+  await initDatabase();
   const db = getDatabase();
 
-  const seeds = [
-    {
-      email: "admin@template.local",
-      username: "admin",
-      password: "password123!",
-      role: "admin" as const,
-      isVerifiedEmail: true,
-    },
-    {
-      email: "test@template.local",
-      username: "tester",
-      password: "password123!",
-      role: "user" as const,
-      isVerifiedEmail: true,
-    },
-  ];
+  // Insert default game config if not present
+  await db
+    .insert(gameConfig)
+    .values({
+      key: 'global_multiplier',
+      value: 1.0,
+      updatedBy: 'seed',
+    })
+    .onDuplicateKeyUpdate({ set: { value: 1.0 } });
 
-  try {
-    for (const user of seeds) {
-      logger.info({ email: user.email }, "Seeding user");
-
-      const encryptedEmail = encryptEmail(user.email);
-      const emailBlindIndex = computeBlindIndex(user.email);
-      const hashedPassword = await hashPassword(user.password);
-
-      try {
-        await db.insert(users).values({
-          id: randomUUID(),
-          emailEncrypted: encryptedEmail,
-          emailBlindIndex: emailBlindIndex,
-          passwordHash: hashedPassword,
-          username: user.username,
-          role: user.role,
-          isVerifiedEmail: user.isVerifiedEmail,
-          accountStatus: "active",
-        });
-
-        logger.info({ email: user.email }, "User successfully created");
-      } catch (insertError: any) {
-        // Handle duplicate entry gracefully (MySQL ER_DUP_ENTRY is usually 1062)
-        if (insertError.code === "ER_DUP_ENTRY") {
-          logger.warn({ email: user.email }, "User already exists - skipping");
-        } else {
-          throw insertError;
-        }
-      }
-    }
-
-    logger.info("Database seeding completed successfully");
-  } catch (error) {
-    logger.error({ error }, "Error during database seeding");
-    process.exit(1);
-  } finally {
-    await closeDatabase();
-  }
+  logger.info('Database seed completed successfully.');
+  await closeDatabase();
 }
 
-seed();
+runSeed().catch((error) => {
+  logger.error({ error }, 'Database seed failed');
+  process.exit(1);
+});

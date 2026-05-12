@@ -56,27 +56,23 @@ export interface EnvConfig {
     readonly retentionCount: number;
   };
 
-  // Security (JWT)
-  readonly jwt: {
-    readonly secretAccess: string;
-    readonly secretRefresh: string;
-    readonly accessExpiresIn: string;
-    readonly refreshExpiresIn: string;
+  // Security — API keys
+  readonly security: {
+    /** Shared secret used by Roblox game servers (X-API-Key header) */
+    readonly robloxApiKey: string;
+    /** Separate secret for the admin dashboard (X-Admin-Key header) */
+    readonly adminApiKey: string;
   };
 
-  // Cookie
-  readonly cookie: {
-    readonly maxAgeDays: number;
+  // External integrations
+  readonly discord: {
+    /** Webhook URL for war-reset notifications (optional) */
+    readonly webhookUrl: string | undefined;
   };
 
   // Cron
   readonly cron: {
     readonly workerConcurrency: number;
-  };
-
-  // Sample worker
-  readonly sampleWorker: {
-    readonly concurrency: number;
   };
 
   // Job queue defaults (BullMQ)
@@ -89,12 +85,18 @@ export interface EnvConfig {
 
   // Rate limiting
   readonly rateLimit: {
-    readonly loginMaxRequests: number;
-    readonly loginWindowSeconds: number;
-    readonly registerMaxRequests: number;
-    readonly registerWindowSeconds: number;
-    readonly refreshMaxRequests: number;
-    readonly refreshWindowSeconds: number;
+    /** Max coin-gain calls per player per window (anti-farming) */
+    readonly robloxCoinGainMax: number;
+    readonly robloxCoinGainWindowSeconds: number;
+    /** Max point-contribution calls per player per window */
+    readonly robloxPointContribMax: number;
+    readonly robloxPointContribWindowSeconds: number;
+    /** Max purchase calls per player per window */
+    readonly robloxPurchaseMax: number;
+    readonly robloxPurchaseWindowSeconds: number;
+    /** Admin endpoint rate limiting */
+    readonly adminMax: number;
+    readonly adminWindowSeconds: number;
   };
 }
 
@@ -126,7 +128,7 @@ export function loadEnvConfig(): EnvConfig {
   return {
     port: Number(getEnvVar('PORT', '3000')),
     nodeEnv: getEnvVar('NODE_ENV', 'development') as Environment,
-    corsOrigin: getEnvVar('CORS_ORIGIN', 'http://localhost:5173'),
+    corsOrigin: getEnvVar('CORS_ORIGIN', '*'),
     logLevel: getEnvVar('LOG_LEVEL', 'info') as LogLevel,
 
     database: {
@@ -151,23 +153,17 @@ export function loadEnvConfig(): EnvConfig {
       retentionCount: Number(getEnvVar('LOG_RETENTION_COUNT', '14')),
     },
 
-    jwt: {
-      secretAccess: getEnvVar('JWT_SECRET_ACCESS'),
-      secretRefresh: getEnvVar('JWT_SECRET_REFRESH'),
-      accessExpiresIn: getEnvVar('JWT_ACCESS_EXPIRES', '15m'),
-      refreshExpiresIn: getEnvVar('JWT_REFRESH_EXPIRES', '7d'),
+    security: {
+      robloxApiKey: getEnvVar('ROBLOX_API_KEY'),
+      adminApiKey: getEnvVar('ADMIN_API_KEY'),
     },
 
-    cookie: {
-      maxAgeDays: Number(getEnvVar('COOKIE_MAX_AGE_DAYS', '7')),
+    discord: {
+      webhookUrl: process.env.DISCORD_WEBHOOK_URL || undefined,
     },
 
     cron: {
       workerConcurrency: Number(getEnvVar('CRON_WORKER_CONCURRENCY', '1')),
-    },
-
-    sampleWorker: {
-      concurrency: Number(getEnvVar('SAMPLE_WORKER_CONCURRENCY', '2')),
     },
 
     queue: {
@@ -178,12 +174,14 @@ export function loadEnvConfig(): EnvConfig {
     },
 
     rateLimit: {
-      loginMaxRequests: Number(getEnvVar('RATE_LIMIT_LOGIN_MAX', '5')),
-      loginWindowSeconds: Number(getEnvVar('RATE_LIMIT_LOGIN_WINDOW', '60')),
-      registerMaxRequests: Number(getEnvVar('RATE_LIMIT_REGISTER_MAX', '3')),
-      registerWindowSeconds: Number(getEnvVar('RATE_LIMIT_REGISTER_WINDOW', '60')),
-      refreshMaxRequests: Number(getEnvVar('RATE_LIMIT_REFRESH_MAX', '10')),
-      refreshWindowSeconds: Number(getEnvVar('RATE_LIMIT_REFRESH_WINDOW', '60')),
+      robloxCoinGainMax: Number(getEnvVar('RATE_LIMIT_COIN_GAIN_MAX', '20')),
+      robloxCoinGainWindowSeconds: Number(getEnvVar('RATE_LIMIT_COIN_GAIN_WINDOW', '60')),
+      robloxPointContribMax: Number(getEnvVar('RATE_LIMIT_POINT_CONTRIB_MAX', '30')),
+      robloxPointContribWindowSeconds: Number(getEnvVar('RATE_LIMIT_POINT_CONTRIB_WINDOW', '60')),
+      robloxPurchaseMax: Number(getEnvVar('RATE_LIMIT_PURCHASE_MAX', '10')),
+      robloxPurchaseWindowSeconds: Number(getEnvVar('RATE_LIMIT_PURCHASE_WINDOW', '60')),
+      adminMax: Number(getEnvVar('RATE_LIMIT_ADMIN_MAX', '60')),
+      adminWindowSeconds: Number(getEnvVar('RATE_LIMIT_ADMIN_WINDOW', '60')),
     },
   };
 }

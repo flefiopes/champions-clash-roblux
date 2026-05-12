@@ -1,0 +1,46 @@
+{
+  "name": "template-webapp",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc -b",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write src/"
+  },
+  "dependencies": {
+    "@primeuix/themes": "^2.0.3",
+    "@tanstack/vue-query": "^5.100.10",
+    "@vee-validate/zod": "^4.15.1",
+    "axios": "^1.16.0",
+    "lucide-vue-next": "^1.0.0",
+    "pinia": "^3.0.4",
+    "primeicons": "^7.0.0",
+    "primevue": "^4.5.5",
+    "vee-validate": "^4.15.1",
+    "vue": "^3.5.34",
+    "vue-router": "^5.0.6",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@tailwindcss/vite": "^4.3.0",
+    "@types/node": "^24.12.4",
+    "@vitejs/plugin-vue": "^6.0.6",
+    "@vue/tsconfig": "^0.8.1",
+    "eslint": "^10.3.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-vue": "^10.9.1",
+    "prettier": "^3.8.3",
+    "tailwindcss": "^4.3.0",
+    "tailwindcss-primeui": "^0.6.1",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.59.3",
+    "vite": "^7.3.3",
+    "vue-tsc": "^3.2.8"
+  }
+}

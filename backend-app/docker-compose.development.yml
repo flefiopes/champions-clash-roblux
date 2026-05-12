@@ -8,15 +8,27 @@ services:
     container_name: champions-clash-api-dev
     ports:
       - "3000:3000"
-    volumes:
-      # Bind mount entire project for hot reload
-      - .:/app
-      # Anonymous volume to prevent local node_modules from overwriting container's
-      - /app/node_modules
+
     env_file:
       - .env
     environment:
       NODE_ENV: development
+      # Force use of internal docker network names
+      DATABASE_HOST: champions-clash-mysql
+      REDIS_HOST: champions-clash-redis
+    command: sh -c "bun install && bun run db:migrate && bun run db:seed && bun run --watch src/index.ts"
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
+          ignore:
+            - node_modules/
+            - .git/
+            - dist/
+            - logs/
+        - action: rebuild
+          path: package.json
     depends_on:
       mysql:
         condition: service_healthy
@@ -39,7 +51,7 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -64,7 +76,7 @@ services:
     volumes:
       - redis_data:/data
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: ["CMD", "sh", "-c", "redis-cli ping || redis-cli -a $$REDIS_PASSWORD ping"]
       interval: 10s
       timeout: 5s
       retries: 5

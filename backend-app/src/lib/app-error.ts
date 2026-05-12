@@ -11,13 +11,8 @@
  */
 export enum AppErrorCode {
   // Auth errors (401/403)
-  INVALID_CREDENTIALS = 'INVALID_CREDENTIALS',
   UNAUTHORIZED = 'UNAUTHORIZED',
   FORBIDDEN = 'FORBIDDEN',
-  TOKEN_EXPIRED = 'TOKEN_EXPIRED',
-  INVALID_TOKEN = 'INVALID_TOKEN',
-  MISSING_TOKEN = 'MISSING_TOKEN',
-  ACCOUNT_SUSPENDED = 'ACCOUNT_SUSPENDED',
 
   // Validation errors (400)
   VALIDATION_ERROR = 'VALIDATION_ERROR',
@@ -27,11 +22,25 @@ export enum AppErrorCode {
   NOT_FOUND = 'NOT_FOUND',
   CONFLICT = 'CONFLICT',
 
-  // File/upload errors (400/500)
-  MISSING_FILE = 'MISSING_FILE',
-  INVALID_FILE = 'INVALID_FILE',
-  UPLOAD_FAILED = 'UPLOAD_FAILED',
-  DELETE_ERROR = 'DELETE_ERROR',
+  // Player errors (400/404/409)
+  PLAYER_NOT_FOUND = 'PLAYER_NOT_FOUND',
+  INSUFFICIENT_COINS = 'INSUFFICIENT_COINS',
+  INSUFFICIENT_GEMS = 'INSUFFICIENT_GEMS',
+
+  // Faction / war errors (400/404/409)
+  WAR_NOT_FOUND = 'WAR_NOT_FOUND',
+  FACTION_NOT_FOUND = 'FACTION_NOT_FOUND',
+  INVALID_FACTION = 'INVALID_FACTION',
+  /** Player already belongs to a faction for this war and the 7-day lock is active */
+  FACTION_LOCK_ACTIVE = 'FACTION_LOCK_ACTIVE',
+  /** Faction does not belong to the specified war */
+  FACTION_WAR_MISMATCH = 'FACTION_WAR_MISMATCH',
+
+  // Purchase errors (400/409)
+  PRODUCT_NOT_FOUND = 'PRODUCT_NOT_FOUND',
+  PRODUCT_INACTIVE = 'PRODUCT_INACTIVE',
+  /** purchaseId has already been processed — idempotent no-op */
+  PURCHASE_ALREADY_PROCESSED = 'PURCHASE_ALREADY_PROCESSED',
 
   // Limit errors (429/403)
   LIMIT_REACHED = 'LIMIT_REACHED',
@@ -53,12 +62,7 @@ export interface AppErrorDetails {
  * Provides type-safe error codes, HTTP status codes, and optional details.
  *
  * @example
- * throw new AppError(
- *   AppErrorCode.NOT_FOUND,
- *   "User not found",
- *   404,
- *   { userId }
- * );
+ * throw new AppError(AppErrorCode.INSUFFICIENT_COINS, 'Not enough coins', 400, { required: 500, current: 200 });
  */
 export class AppError extends Error {
   /**

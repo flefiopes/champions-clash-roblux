@@ -1,225 +1,106 @@
-# Game API Backend
+# Champions Clash — Backend API
 
-Production-ready REST API template built on Bun and ElysiaJS. Designed for rapid project bootstrapping with security, scalability, and maintainability as first-class concerns.
-
----
-
-## Tech Stack
-
-| Layer         | Technology                          |
-|---------------|-------------------------------------|
-| Runtime       | Bun                                 |
-| Framework     | ElysiaJS                            |
-| Language      | TypeScript (strict mode)            |
-| Database      | MySQL via Drizzle ORM               |
-| Cache / Queue | Redis (ioredis), BullMQ             |
-| Storage       | S3-compatible (MinIO / AWS S3)      |
-| Auth          | JWT (access + refresh with rotation)|
-| Email         | Nodemailer (async via BullMQ)       |
-| Logging       | Pino (structured, file rotation)    |
-| Validation    | Zod                                 |
-| Security      | Helmet, CORS, rate limiting         |
+Le backend officiel du jeu Roblox **Champions Clash**.
+Construit avec **Bun**, **ElysiaJS**, **Drizzle ORM** (MySQL) et **Redis** pour gérer l'économie, la sécurité, et le système de compétition en temps réel entre factions.
 
 ---
 
-## Architecture
+## 🏗️ Architecture & Fonctionnement
 
-```
-src/
-  config/        # Environment variables, database, redis, storage configs
-  cron/          # Scheduled job definitions (BullMQ repeatable jobs)
-  db/            # Drizzle ORM schema and database connection management
-  lib/           # Shared utilities (logger, queue, storage, rate limiter, etc.)
-  middleware/    # Elysia middleware (auth guard, optional auth)
-  routes/        # API route definitions (prefixed /api/v1)
-  services/      # Business logic (auth, user, etc.)
-  types/         # Shared TypeScript type definitions
-  validation/    # Zod schemas for request validation
-  workers/       # Background job processors (email, cron, sample)
-  index.ts       # Application entry point and server bootstrap
-```
+Le backend agit comme la source de vérité pour la persistance des données et la validation de la logique métier. Il est divisé en deux grandes parties :
 
-All routes are mounted under `/api/v1`. Public routes (health, auth) are registered before authenticated routes.
+1. **API Publique (Roblox) :** Sécurisée par `ROBLOX_API_KEY`. Utilisée par les serveurs de jeu Roblox via `HttpService` pour lire et écrire les données des joueurs.
+2. **API Admin (Dashboard) :** Sécurisée par `ADMIN_API_KEY`. Utilisée pour le back-office web afin de piloter les guerres, configurer la boutique et ajuster les statistiques.
+
+### Entités Principales
+- **Factions & Guerres :** Les joueurs rejoignent un camp pour une saison ("War"). Le système bloque le changement de camp pendant 7 jours.
+- **Économie & Transactions :** Les gains de `coins` et les dépenses en `points de faction` ou `gems` sont vérifiés côté serveur. Un registre de transactions immuable permet de garantir l'absence d'exploits (farming, duplication).
+- **Abonnements & Boutique :** Les reçus de `MarketplaceService` (Roblox) sont traités de manière idempotente pour éviter de créditer un achat deux fois en cas de lag réseau.
+- **Game Config :** Variables de jeu "Hot-Reloadables" (ex: multiplicateur global d'XP) stockées en DB et mises en cache sur Redis pour une lecture ultra-rapide par les serveurs Roblox.
+
+### Crons & Workers (Tâches planifiées)
+- **Weekly War Reset :** Chaque Lundi à 00:00 UTC, la guerre est réinitialisée. Les scores de la semaine sont gelés ("snapshot"), le camp vainqueur est déclaré, et une notification Discord est envoyée.
+- **Expire Boosts :** Nettoie toutes les 5 minutes les multiplicateurs de joueurs arrivés à expiration.
 
 ---
 
-## Security
+## 🚀 Guide de Développement (Local)
 
-- **Password hashing**: Argon2id via Bun native implementation.
-- **Email encryption at rest**: AES-256-GCM with HMAC-SHA256 blind index for lookups without decryption.
-- **JWT authentication**: Separate access and refresh tokens with automatic rotation on refresh.
-- **Refresh token storage**: Redis-backed with blacklisting and per-user revocation.
-- **HTTP-Only cookies**: Refresh tokens are stored in secure, HTTP-Only, SameSite=Strict cookies.
-- **Security headers**: Helmet with CSP enforcement in production.
-- **Rate limiting**: Redis-based sliding window rate limiter (configurable per route).
-- **CORS**: Configurable allowed origins, methods, and headers.
-- **Non-root Docker**: Production container runs as unprivileged user.
-- **Graceful shutdown**: Ordered teardown of all connections with forced exit timeout.
+Pour travailler sur ce projet sans conflit avec Windows ou WSL2, la configuration Docker a été optimisée avec le système **Docker Compose Watch**.
 
----
+### 1. Prérequis
+- Docker Desktop lancé
+- Copier `.env.example` en `.env` (les identifiants par défaut sont déjà bons pour le dev local).
 
-## Setup
+### 2. Lancer l'environnement de Dev (Hot Reload)
 
-### Prerequisites
+Afin d'avoir le rechargement automatique du code ET les logs en temps réel, il est recommandé d'utiliser **deux terminaux séparés**.
 
-- [Bun](https://bun.sh) (latest)
-- MySQL 8+
-- Redis 6+
-- MinIO or S3-compatible storage (optional for local dev)
-
-### Installation
-
+**Terminal 1 : Lancer le Watcher (Hot Reload)**
+Nettoie toujours les conteneurs précédents, puis lance le Watcher natif Docker :
 ```bash
-# Install dependencies
-bun install
-
-# Copy and configure environment
-cp .env.example .env
-# Edit .env with your values (database, redis, JWT secrets, encryption keys)
-
-# Start infrastructure services
-docker compose up -d
-
-# Run database migrations
-bun run db:migrate
-
-# Start development server (hot reload)
-bun run dev
+docker compose -f docker-compose.development.yml down -v
+docker compose -f docker-compose.development.yml watch
 ```
+*Le watcher va tourner indéfiniment. À chaque sauvegarde de fichier (ex: Ctrl+S), Docker copie le fichier dans le conteneur et redémarre instantanément le processus Bun.*
 
-### Generating Encryption Keys
-
-JWT secrets and email encryption keys must be cryptographically random 32-byte hex strings:
-
+**Terminal 2 : Afficher les Logs**
+Ouvre un second onglet de terminal pour lire les logs de l'API en direct :
 ```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+docker compose -f docker-compose.development.yml logs -f api-dev
 ```
 
----
-
-## Scripts
-
-| Command              | Description                              |
-|----------------------|------------------------------------------|
-| `bun run dev`        | Start development server with hot reload |
-| `bun run start`      | Start production server                  |
-| `bun run test`       | Run test suite                           |
-| `bun run typecheck`  | TypeScript type checking                 |
-| `bun run lint`       | ESLint analysis                          |
-| `bun run lint:fix`   | ESLint auto-fix                          |
-| `bun run format`     | Prettier formatting                      |
-| `bun run db:generate`| Generate Drizzle migrations              |
-| `bun run db:migrate` | Apply pending migrations                 |
-| `bun run db:push`    | Push schema directly (dev only)          |
-| `bun run db:studio`  | Open Drizzle Studio GUI                  |
-
----
-
-## Environment Variables
-
-All variables are documented in `.env.example`. Required variables (no default) will cause the server to fail at startup if missing.
-
-| Category        | Key                          | Required | Default              |
-|-----------------|------------------------------|----------|----------------------|
-| Server          | `PORT`                       | No       | `3000`               |
-| Server          | `NODE_ENV`                   | No       | `development`        |
-| Database        | `DATABASE_HOST`              | No       | `localhost`          |
-| Database        | `DATABASE_PORT`              | No       | `3306`               |
-| Database        | `DATABASE_USER`              | Yes      | --                   |
-| Database        | `DATABASE_PASSWORD`          | Yes      | --                   |
-| Database        | `DATABASE_NAME`              | Yes      | --                   |
-| Database        | `DATABASE_CONNECTION_LIMIT`  | No       | `10`                 |
-| Redis           | `REDIS_HOST`                 | No       | `localhost`          |
-| Redis           | `REDIS_PORT`                 | No       | `6379`               |
-| Redis           | `REDIS_PASSWORD`             | No       | --                   |
-| Storage         | `S3_ENDPOINT`                | No       | `http://localhost:9000` |
-| Storage         | `S3_REGION`                  | No       | `us-east-1`          |
-| Storage         | `S3_ACCESS_KEY`              | No       | `minioadmin`         |
-| Storage         | `S3_SECRET_KEY`              | No       | `minioadmin`         |
-| Storage         | `S3_BUCKETS`                 | No       | `uploads,images,documents` |
-| Security        | `JWT_SECRET_ACCESS`          | Yes      | --                   |
-| Security        | `JWT_SECRET_REFRESH`         | Yes      | --                   |
-| Security        | `JWT_ACCESS_EXPIRES`         | No       | `15m`                |
-| Security        | `JWT_REFRESH_EXPIRES`        | No       | `7d`                 |
-| Encryption      | `EMAIL_ENCRYPTION_KEY`       | Yes      | --                   |
-| Encryption      | `EMAIL_HMAC_KEY`             | Yes      | --                   |
-| Email           | `SMTP_HOST`                  | No       | --                   |
-| Email           | `SMTP_PORT`                  | No       | `587`                |
-| CORS            | `CORS_ORIGIN`                | No       | `http://localhost:5173` |
-
-Full list available in `.env.example`.
-
----
-
-## Docker
-
-### Development Infrastructure
-
-The included `docker-compose.yml` starts MySQL, Redis, and MinIO:
-
+### 3. Commandes Utiles (Hors Docker)
+Si tu souhaites exécuter des commandes locales (assure-toi d'avoir installé `bun` sur ta machine Windows/Linux) :
 ```bash
-docker compose up -d
-```
+# Formater le code
+bun format
 
-Services expose the following ports by default:
+# Vérifier les erreurs TypeScript
+bun typecheck
 
-| Service | Port  | Purpose      |
-|---------|-------|--------------|
-| MySQL   | 3306  | Database     |
-| Redis   | 6379  | Cache/Queue  |
-| MinIO   | 9000  | S3 API       |
-| MinIO   | 9001  | Web Console  |
+# Lancer le Linter
+bun lint:fix
 
-### Production Build
+### 4. Base de données & Migrations
+Les migrations (application du schéma SQL) et l'injection de données par défaut (Seeding) **se lancent automatiquement** à chaque démarrage du conteneur API.
 
-The multi-stage Dockerfile compiles a standalone binary with `bun build --compile`:
+Cependant, lorsque tu modifies un fichier dans `src/db/schema/`, tu dois **générer manuellement** la nouvelle migration :
 
+Si tu as Bun installé localement :
 ```bash
-docker build -t template-api .
-docker run -p 3000:3000 --env-file .env template-api
+bun run db:generate
 ```
 
-The production image runs as a non-root user and contains only the compiled binary and system CA certificates.
+Si tu n'as rien installé sur ton PC, utilise Docker (pendant que l'environnement tourne) :
+```bash
+docker exec -it champions-clash-api-dev bun run db:generate
+```
+```
 
 ---
 
-## API Endpoints
+## 🗂️ Structure des Routes
 
-### Public
+Toutes les routes sont préfixées par `/api/v1/`.
 
-| Method | Path                     | Description                    |
-|--------|--------------------------|--------------------------------|
-| GET    | `/`                      | API information                |
-| GET    | `/api/v1/health`         | Basic health check             |
-| GET    | `/api/v1/health/ready`   | Readiness check (DB + Redis)   |
-| POST   | `/api/v1/auth/register`  | Create account                 |
-| POST   | `/api/v1/auth/login`     | Authenticate                   |
-| POST   | `/api/v1/auth/refresh`   | Refresh access token           |
-| POST   | `/api/v1/auth/logout`    | Invalidate session             |
+### 🛡️ Routes Roblox (Nécessite le Header `X-API-Key`)
+- `POST /players/login` : Connecte ou enregistre un joueur.
+- `GET /players/:robloxId` : Récupère le profil (solde, faction actuelle, etc.).
+- `POST /players/:robloxId/coins` : Valide un gain d'argent (avec Rate-Limiting restrictif).
+- `POST /players/:robloxId/points` : Convertit les coins en points pour la guerre.
+- `POST /players/:robloxId/faction` : Rejoint une faction.
+- `GET /wars/active` : Récupère la saison actuelle et les scores totaux.
+- `GET /wars/:warId/leaderboard` : Récupère le Top 100 des contributeurs.
+- `POST /purchases/process` : Valide un paiement Roblox en argent réel (Idempotent).
 
-### Authenticated
+### ⚙️ Routes Admin (Nécessite le Header `X-Admin-Key`)
+- `GET /admin/transactions` : Historique comptable global.
+- `POST /admin/wars` & `PUT /admin/wars/:id` : Crée/Edite les saisons.
+- `POST /admin/factions` & `PUT /admin/factions/:id` : Crée/Edite les camps.
+- `POST /admin/products` & `PUT /admin/products/:id` : Modifie le catalogue boutique.
+- `PUT /admin/config` : Met à jour les Feature Flags du jeu sans redémarrage.
 
-| Method | Path                        | Description                |
-|--------|-----------------------------|----------------------------|
-| GET    | `/api/v1/users/me`          | Get current user profile   |
-| PATCH  | `/api/v1/users/me`          | Update profile             |
-| PATCH  | `/api/v1/users/me/password` | Change password            |
-| DELETE | `/api/v1/users/me`          | Soft-delete account        |
-
----
-
-## Background Workers
-
-| Worker  | Queue    | Description                                        |
-|---------|----------|----------------------------------------------------|
-| Cron    | `cron`   | Scheduled jobs registered from `src/cron/jobs/`     |
-| Email   | `email`  | Async email sending via nodemailer                  |
-| Sample  | `sample` | Example worker demonstrating inline and threaded patterns |
-
-Workers use BullMQ with configurable concurrency, exponential backoff retry, and automatic job cleanup.
-
----
-
-## License
-
-Unlicensed template. Adapt to your project requirements.
+### 🌐 Routes Publiques
+- `GET /config` : Lit la configuration actuelle du jeu (Mis en cache Redis, pas d'Auth).
+- `GET /health` & `GET /health/ready` : Vérification du statut de l'API et des BDD.

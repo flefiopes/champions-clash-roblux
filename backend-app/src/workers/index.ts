@@ -1,9 +1,8 @@
 /**
  * Workers barrel export.
- * Provides start functions for all background workers.
+ * Exports worker startup functions for use in the application entry point.
  *
- * @module workers
+ * @module workers/index
  */
 
 export { startCronWorker } from './cron.worker';
-export { startSampleWorker, queueSampleJob } from './sample.worker';

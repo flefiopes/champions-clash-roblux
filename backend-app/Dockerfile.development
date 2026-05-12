@@ -14,4 +14,4 @@ EXPOSE 3000
 # Volume mounts from docker-compose handle code synchronization
 ENV NODE_ENV=development
 
-CMD ["bun", "run", "--hot", "src/index.ts"]
+CMD ["bun", "run", "--watch", "src/index.ts"]

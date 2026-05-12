@@ -1,12 +1,44 @@
 /**
- * Validation schemas barrel export.
- * Re-exports all validation schemas for use in route handlers.
+ * Validation barrel export.
+ * Re-exports all Zod schemas and their inferred types.
  *
  * @module validation
  */
 
-export { registerSchema, loginSchema } from './auth.validation';
-export type { RegisterInput, LoginInput } from './auth.validation';
+export {
+  PlayerLoginSchema,
+  CoinTransactionSchema,
+  PointContributionSchema,
+  FactionJoinSchema,
+} from './player.validation';
+export type {
+  PlayerLoginInput,
+  CoinTransactionInput,
+  PointContributionInput,
+  FactionJoinInput,
+} from './player.validation';
 
-export { updateProfileSchema, changePasswordSchema } from './user.validation';
-export type { UpdateProfileInput, ChangePasswordInput } from './user.validation';
+export { CreateWarSchema, UpdateWarSchema } from './war.validation';
+export type { CreateWarInput, UpdateWarInput } from './war.validation';
+
+export {
+  CreateFactionSchema,
+  UpdateFactionSchema,
+  UpdateGameConfigSchema,
+  CreateProductSchema,
+  UpdateProductSchema,
+  AdminPaginationSchema,
+  TransactionFilterSchema,
+} from './admin.validation';
+export type {
+  CreateFactionInput,
+  UpdateFactionInput,
+  UpdateGameConfigInput,
+  CreateProductInput,
+  UpdateProductInput,
+  AdminPaginationInput,
+  TransactionFilterInput,
+} from './admin.validation';
+
+export { ProcessPurchaseSchema } from './purchase.validation';
+export type { ProcessPurchaseInput } from './purchase.validation';

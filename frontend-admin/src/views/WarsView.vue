@@ -51,8 +51,8 @@ const formatStatus = (status: string) => {
       <Button
         label="Nouvelle Guerre"
         icon="pi pi-plus"
-        @click="openCreateModal"
         class="!bg-indigo-600 hover:!bg-indigo-500 !border-none"
+        @click="openCreateModal"
       />
     </div>
 
@@ -83,7 +83,11 @@ const formatStatus = (status: string) => {
           sortable
           style="width: 25%"
         />
-        <Column field="name" header="Nom de la Saison" sortable style="width: 25%" />
+        <Column
+field="name"
+header="Nom de la Saison"
+sortable
+style="width: 25%" />
         <Column field="createdAt" header="Date de Création" sortable>
           <template #body="{ data }">
             {{ new Date(data.createdAt).toLocaleString('fr-FR') }}
@@ -112,13 +116,13 @@ const formatStatus = (status: string) => {
                 @click="openEditModal(slotProps.data)"
               />
               <Button
+                v-if="slotProps.data.status !== 'finished'"
                 icon="pi pi-stop-circle"
                 outlined
                 rounded
                 severity="danger"
                 class="!text-red-400 !border-red-400 hover:!bg-red-500/10"
                 @click="openFinishModal(slotProps.data)"
-                v-if="slotProps.data.status !== 'finished'"
               />
             </div>
           </template>

@@ -24,14 +24,20 @@ const getTypeSeverity = (type: string) => {
       <ProgressSpinner />
     </div>
 
-    <div v-else-if="transactionsQuery.isError.value"
+    <div
+v-else-if="transactionsQuery.isError.value"
       class="text-red-400 p-4 bg-red-500/10 rounded-xl border border-red-500/20">
       Une erreur est survenue lors du chargement des données.
     </div>
 
     <div v-else class="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden shadow-sm">
-      <DataTable :value="transactionsQuery.data.value?.data || []" paginator :rows="15" data-key="id"
-        class="p-datatable-sm w-full" row-hover>
+      <DataTable
+:value="transactionsQuery.data.value?.data || []"
+paginator
+:rows="15"
+data-key="id"
+        class="p-datatable-sm w-full"
+row-hover>
         <template #empty>
           <div class="p-6 text-center text-slate-400">Aucune transaction trouvée.</div>
         </template>

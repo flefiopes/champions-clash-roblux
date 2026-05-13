@@ -8,6 +8,8 @@ import {
   ShoppingCartIcon,
   HistoryIcon,
   MenuIcon,
+  Gamepad2Icon,
+  ScrollTextIcon,
 } from 'lucide-vue-next';
 
 const props = defineProps<{
@@ -24,6 +26,8 @@ const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboardIcon },
   { name: 'Guerres', href: '/wars', icon: SwordsIcon },
   { name: 'Factions', href: '/factions', icon: ShieldIcon },
+  { name: 'Mini-jeux', href: '/minigames', icon: Gamepad2Icon },
+  { name: 'Logs Mini-jeux', href: '/minigames/logs', icon: ScrollTextIcon },
   { name: 'Boutique', href: '/products', icon: ShoppingCartIcon },
   { name: 'Configuration', href: '/config', icon: SettingsIcon },
   { name: 'Audit', href: '/transactions', icon: HistoryIcon },

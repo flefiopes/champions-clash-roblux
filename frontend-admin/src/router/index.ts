@@ -45,6 +45,16 @@ const router = createRouter({
           name: 'transactions',
           component: () => import('@/views/TransactionsView.vue'),
         },
+        {
+          path: 'minigames',
+          name: 'minigames',
+          component: () => import('@/views/MinigamesView.vue'),
+        },
+        {
+          path: 'minigames/logs',
+          name: 'minigame-logs',
+          component: () => import('@/views/MinigameLogsView.vue'),
+        },
       ],
     },
     {

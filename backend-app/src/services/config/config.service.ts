@@ -28,11 +28,11 @@ const CACHE_TTL_SECONDS = 60;
  */
 const DEFAULT_CONFIG: PublicGameConfig = {
   minigames: {
-    race: true,
-    combat: true,
-    idle: false,
-    quiz: false,
-    platformer: false,
+    race: { enabled: true, max_reward: 300 },
+    combat: { enabled: true, max_reward: 500 },
+    idle: { enabled: false, max_reward: 100 },
+    quiz: { enabled: false, max_reward: 200 },
+    platformer: { enabled: false, max_reward: 400 },
   },
   globalMultiplier: 1.0,
   doublePointsWeekend: false,
@@ -71,7 +71,9 @@ export async function getPublicConfig(): Promise<PublicGameConfig> {
   const config: PublicGameConfig = {
     minigames: {
       ...DEFAULT_CONFIG.minigames,
-      ...((dbConfig.minigames as Partial<PublicGameConfig['minigames']>) ?? {}),
+      ...(typeof dbConfig.minigames === 'object' && dbConfig.minigames !== null
+        ? (dbConfig.minigames as Record<string, any>)
+        : {}),
     },
     globalMultiplier:
       typeof dbConfig.global_multiplier === 'number'

@@ -3,6 +3,7 @@ import { ref, watch, computed } from 'vue';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import Dropdown from 'primevue/dropdown';
+import InputNumber from 'primevue/inputnumber';
 import Button from 'primevue/button';
 import { useAdminFactions } from '@/composables/useAdminFactions';
 import { useAdminWars } from '@/composables/useAdminWars';
@@ -25,6 +26,7 @@ const form = ref({
   name: '',
   color_hex: '#FFFFFF',
   slogan: '',
+  total_points: 0,
 });
 
 // Options for Dropdown
@@ -42,6 +44,7 @@ watch(
         name: newFaction.name,
         color_hex: newFaction.colorHex,
         slogan: newFaction.slogan,
+        total_points: newFaction.totalPoints,
       };
     } else {
       form.value = {
@@ -49,6 +52,7 @@ watch(
         name: '',
         color_hex: '#FFFFFF',
         slogan: '',
+        total_points: 0,
       };
     }
   },
@@ -82,6 +86,7 @@ const save = async () => {
         name: form.value.name,
         color_hex: form.value.color_hex,
         slogan: form.value.slogan,
+        total_points: form.value.total_points,
       };
       await updateFaction.mutateAsync({ id: props.faction.id, data: dto });
     } else {
@@ -106,7 +111,6 @@ const save = async () => {
 <template>
   <Dialog
     :visible="visible"
-    @update:visible="emit('update:visible', $event)"
     modal
     :header="faction ? 'Modifier la faction' : 'Créer une nouvelle faction'"
     :style="{ width: '32rem' }"
@@ -116,6 +120,7 @@ const save = async () => {
       content: { class: 'bg-slate-900 pt-6' },
       footer: { class: 'bg-slate-900 border-t border-slate-800' }
     }"
+    @update:visible="emit('update:visible', $event)"
   >
     <div class="flex flex-col gap-6">
       
@@ -126,8 +131,8 @@ const save = async () => {
           id="war_id"
           v-model="form.war_id"
           :options="warOptions"
-          optionLabel="label"
-          optionValue="value"
+          option-label="label"
+          option-value="value"
           placeholder="Sélectionnez une guerre"
           class="w-full"
           :pt="{
@@ -179,6 +184,21 @@ const save = async () => {
         <small v-if="!isValidHex(form.color_hex)" class="text-red-400">Format invalide. Exemple: #DC143C</small>
       </div>
 
+      <div v-if="faction" class="flex flex-col gap-2">
+        <label for="total_points" class="text-sm font-medium text-slate-300">Points de la faction</label>
+        <InputNumber
+          id="total_points"
+          v-model="form.total_points"
+          class="w-full"
+          :min="0"
+          :pt="{
+            root: { class: '!bg-slate-950 !border-slate-800' },
+            input: { class: '!text-white' }
+          }"
+        />
+        <small class="text-slate-500">Modifier le score en temps réel pour cette faction.</small>
+      </div>
+
     </div>
 
     <template #footer>
@@ -187,16 +207,16 @@ const save = async () => {
         icon="pi pi-times"
         text
         severity="secondary"
-        @click="close"
         class="!text-slate-400 hover:!text-white"
+        @click="close"
       />
       <Button
         label="Enregistrer"
         icon="pi pi-check"
-        @click="save"
         :loading="isSubmitting"
         :disabled="!isValid"
         class="!bg-indigo-600 hover:!bg-indigo-500 !border-none"
+        @click="save"
       />
     </template>
   </Dialog>

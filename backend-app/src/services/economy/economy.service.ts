@@ -66,6 +66,43 @@ export async function addCoins(
 }
 
 /**
+ * Adds XP to a player's profile and records a transaction.
+ *
+ * @param playerId - Internal player UUID
+ * @param amount - Amount of XP to add
+ * @param source - Source identifier
+ * @returns Updated XP balance
+ */
+export async function addXp(playerId: string, amount: number, source: string): Promise<number> {
+  const db = getDatabase();
+
+  await db
+    .update(players)
+    .set({ xp: sql`${players.xp} + ${amount}` })
+    .where(eq(players.id, playerId));
+
+  await db.insert(transactions).values({
+    id: randomUUID(),
+    playerId,
+    type: 'xp_gain',
+    amount,
+    source,
+    meta: null,
+  });
+
+  const updated = await db
+    .select({ xp: players.xp })
+    .from(players)
+    .where(eq(players.id, playerId))
+    .limit(1);
+
+  const newBalance = updated[0]?.xp ?? 0;
+
+  logger.debug({ playerId, amount, source, newBalance }, 'XP added');
+  return newBalance;
+}
+
+/**
  * Deducts coins from a player's balance.
  * Throws INSUFFICIENT_COINS if the player cannot afford the cost.
  *

@@ -23,8 +23,8 @@ const {
       <Button
         label="Nouvelle Faction"
         icon="pi pi-plus"
-        @click="openCreateModal"
         class="!bg-indigo-600 hover:!bg-indigo-500 !border-none"
+        @click="openCreateModal"
       />
     </div>
 
@@ -59,6 +59,11 @@ const {
         <Column field="slogan" header="Slogan" sortable>
           <template #body="{ data }">
             <span class="italic text-slate-400">"{{ data.slogan }}"</span>
+          </template>
+        </Column>
+        <Column field="totalPoints" header="Points" sortable>
+          <template #body="{ data }">
+            <span class="font-bold text-indigo-400">{{ data.totalPoints.toLocaleString() }}</span>
           </template>
         </Column>
         <Column header="Couleur">

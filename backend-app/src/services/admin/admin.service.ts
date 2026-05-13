@@ -9,7 +9,7 @@
 import { eq, and, desc, gte, lte, sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { getDatabase } from '@/db';
-import { wars, factions, transactions, players, gameConfig, products } from '@/db/schema';
+import { wars, factions, transactions, players } from '@/db/schema';
 import { createChildLogger } from '@/lib/logger';
 import { AppError, AppErrorCode } from '@/lib/app-error';
 import type {
@@ -17,9 +17,6 @@ import type {
   UpdateWarInput,
   CreateFactionInput,
   UpdateFactionInput,
-  UpdateGameConfigInput,
-  CreateProductInput,
-  UpdateProductInput,
   TransactionFilterInput,
 } from '@/validation';
 import type { PaginatedResponse } from '@/types';
@@ -50,6 +47,32 @@ export async function getDashboardStats(): Promise<Record<string, number>> {
     activeWars: activeWarsCount[0]?.count ?? 0,
     totalFactions: totalFactionsCount[0]?.count ?? 0,
   };
+}
+
+/**
+ * Retrieves aggregate statistics for each mini-game.
+ * Returns total runs and total coins earned per game.
+ *
+ * @returns List of mini-game stats
+ */
+export async function getMinigameStats(): Promise<Array<{ minigameId: string; totalRuns: number; totalCoins: number }>> {
+  const db = getDatabase();
+
+  const stats = await db
+    .select({
+      source: transactions.source,
+      totalRuns: sql<number>`COUNT(*)`,
+      totalCoins: sql<number>`SUM(${transactions.amount})`,
+    })
+    .from(transactions)
+    .where(and(eq(transactions.type, 'coin_gain'), sql`${transactions.source} LIKE 'minigame_%'`))
+    .groupBy(transactions.source);
+
+  return stats.map((s) => ({
+    minigameId: s.source.replace('minigame_', ''),
+    totalRuns: s.totalRuns,
+    totalCoins: s.totalCoins,
+  }));
 }
 
 /** Admin service logger */
@@ -201,6 +224,7 @@ export async function updateFaction(factionId: string, data: UpdateFactionInput)
       ...(data.name && { name: data.name }),
       ...(data.color_hex && { colorHex: data.color_hex }),
       ...(data.slogan && { slogan: data.slogan }),
+      ...(data.total_points !== undefined && { totalPoints: data.total_points }),
     })
     .where(eq(factions.id, factionId));
 
@@ -225,6 +249,7 @@ export async function listFactions() {
       name: factions.name,
       colorHex: factions.colorHex,
       slogan: factions.slogan,
+      totalPoints: factions.totalPoints,
       createdAt: factions.createdAt,
     })
     .from(factions)
@@ -256,6 +281,9 @@ export async function getTransactionLogs(
   }
   if (filters.type) {
     conditions.push(eq(transactions.type, filters.type));
+  }
+  if (filters.source) {
+    conditions.push(eq(transactions.source, filters.source));
   }
   if (filters.from) {
     conditions.push(gte(transactions.createdAt, new Date(filters.from)));
@@ -302,110 +330,4 @@ export async function getTransactionLogs(
       totalPages: Math.ceil(total / filters.limit),
     },
   };
-}
-
-// ---------------------------------------------------------------------------
-// Game configuration
-// ---------------------------------------------------------------------------
-
-/**
- * Retrieves all game configuration entries.
- *
- * @returns Key-value map of all configuration entries
- */
-export async function getGameConfig(): Promise<Record<string, unknown>> {
-  const db = getDatabase();
-  const rows = await db.select().from(gameConfig);
-
-  return Object.fromEntries(rows.map((r) => [r.key, r.value]));
-}
-
-/**
- * Upserts a single game configuration key.
- * Inserts the key if it doesn't exist; updates the value and audit fields if it does.
- *
- * @param key - Configuration key to set
- * @param data - Validated configuration update input
- * @param adminUsername - Admin performing the update (for audit)
- */
-export async function updateGameConfig(
-  key: string,
-  data: UpdateGameConfigInput,
-  adminUsername: string
-): Promise<void> {
-  const db = getDatabase();
-
-  await db
-    .insert(gameConfig)
-    .values({ key, value: data.value, updatedBy: adminUsername })
-    .onDuplicateKeyUpdate({
-      set: { value: data.value, updatedBy: adminUsername, updatedAt: new Date() },
-    });
-
-  logger.info({ key, adminUsername }, 'Game config updated');
-}
-
-// ---------------------------------------------------------------------------
-// Product catalogue
-// ---------------------------------------------------------------------------
-
-/**
- * Creates a new purchasable product in the catalogue.
- *
- * @param data - Validated product creation input
- * @returns The newly created product ID
- */
-export async function createProduct(data: CreateProductInput): Promise<string> {
-  const db = getDatabase();
-  const id = randomUUID();
-
-  await db.insert(products).values({
-    id,
-    robloxProductId: data.roblox_product_id,
-    type: data.type,
-    value: data.value,
-    isActive: data.is_active ?? true,
-  });
-
-  logger.info({ productId: id, robloxProductId: data.roblox_product_id }, 'Product created');
-  return id;
-}
-
-/**
- * Updates an existing product's fields.
- *
- * @param productId - Internal product UUID
- * @param data - Partial product update
- */
-export async function updateProduct(productId: string, data: UpdateProductInput): Promise<void> {
-  const db = getDatabase();
-
-  const existing = await db
-    .select({ id: products.id })
-    .from(products)
-    .where(eq(products.id, productId))
-    .limit(1);
-
-  if (!existing.length) {
-    throw new AppError(AppErrorCode.NOT_FOUND, 'Product not found', 404, { productId });
-  }
-
-  await db
-    .update(products)
-    .set({
-      ...(data.type && { type: data.type }),
-      ...(data.value && { value: data.value }),
-      ...(data.is_active !== undefined && { isActive: data.is_active }),
-    })
-    .where(eq(products.id, productId));
-
-  logger.info({ productId, changes: data }, 'Product updated');
-}
-
-/**
- * Returns all products in the catalogue, ordered by Roblox product ID.
- */
-export function listProducts() {
-  const db = getDatabase();
-  return db.select().from(products).orderBy(products.robloxProductId);
 }

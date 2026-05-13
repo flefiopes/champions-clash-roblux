@@ -24,7 +24,8 @@ export type TransactionType =
   | 'coin_spend'
   | 'gem_gain'
   | 'gem_spend'
-  | 'point_contribution';
+  | 'point_contribution'
+  | 'xp_gain';
 
 /** Purchasable product categories */
 export type ProductType = 'gems' | 'boost' | 'cosmetic' | 'faction_reset';
@@ -40,6 +41,8 @@ export interface PlayerProfile {
   gems: number;
   xp: number;
   rank: PlayerRank;
+  level: number;
+  nextLevelXp: number;
   loginStreak: number;
   lastSeen: Date | null;
   createdAt: Date;
@@ -134,13 +137,10 @@ export interface DailyLimits {
  * Public game configuration snapshot polled by Roblox every 5 minutes.
  */
 export interface PublicGameConfig {
-  minigames: {
-    race: boolean;
-    combat: boolean;
-    idle: boolean;
-    quiz: boolean;
-    platformer: boolean;
-  };
+  minigames: Record<string, {
+    enabled: boolean;
+    max_reward: number;
+  }>;
   globalMultiplier: number;
   doublePointsWeekend: boolean;
   maxWarsPerPlayer: number;

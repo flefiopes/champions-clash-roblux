@@ -12,7 +12,7 @@ import { getDatabase } from '@/db';
 import { players, playerFactions, factions, wars } from '@/db/schema';
 import { createChildLogger } from '@/lib/logger';
 import { AppError, AppErrorCode } from '@/lib/app-error';
-import type { PlayerProfile, PlayerFactionSummary } from '@/types';
+import type { PlayerProfile, PlayerFactionSummary, PlayerRank } from '@/types';
 
 /** Player service logger */
 const logger = createChildLogger({ module: 'player-service' });
@@ -41,14 +41,42 @@ export async function loginOrCreate(robloxUserId: number, username: string): Pro
     .limit(1);
 
   if (existing.length > 0) {
-    // Update last_seen and sync username on every login
+    const player = (
+      await db
+        .select({ id: players.id, lastSeen: players.lastSeen, loginStreak: players.loginStreak })
+        .from(players)
+        .where(eq(players.robloxUserId, robloxUserId))
+        .limit(1)
+    )[0]!;
+
+    const now = new Date();
+    const lastSeen = player.lastSeen || new Date(0); // Fallback for very old players or nulls
+    let newStreak = player.loginStreak;
+
+    // Daily streak logic
+    const msInDay = 24 * 60 * 60 * 1000;
+    const diffMs = now.getTime() - lastSeen.getTime();
+    const diffDays = Math.floor(diffMs / msInDay);
+
+    if (diffDays === 1) {
+      // Logged in yesterday -> increment streak
+      newStreak += 1;
+    } else if (diffDays > 1) {
+      // Missed at least one day -> reset streak
+      newStreak = 1;
+    }
+    // If diffDays === 0 (same day), keep current streak
+
     await db
       .update(players)
-      .set({ username, lastSeen: new Date() })
+      .set({ username, lastSeen: now, loginStreak: newStreak })
       .where(eq(players.robloxUserId, robloxUserId));
 
-    logger.debug({ robloxUserId, playerId: existing[0]!.id }, 'Player logged in');
-    return existing[0]!.id;
+    logger.debug(
+      { robloxUserId, playerId: player.id, oldStreak: player.loginStreak, newStreak },
+      'Player logged in (streak updated)'
+    );
+    return player.id;
   }
 
   const newId = randomUUID();
@@ -57,6 +85,7 @@ export async function loginOrCreate(robloxUserId: number, username: string): Pro
     id: newId,
     robloxUserId,
     username,
+    loginStreak: 1,
     lastSeen: new Date(),
   });
 
@@ -65,8 +94,24 @@ export async function loginOrCreate(robloxUserId: number, username: string): Pro
 }
 
 /**
+ * Utility to calculate player level from total XP.
+ * Formula: Level = floor(sqrt(XP / 100)) + 1
+ */
+function calculateLevel(xp: number): number {
+  return Math.floor(Math.sqrt(xp / 100)) + 1;
+}
+
+/**
+ * Utility to calculate total XP required to reach a specific level.
+ * Formula: XP = (Level - 1)^2 * 100
+ */
+function calculateXpForLevel(level: number): number {
+  return Math.pow(level - 1, 2) * 100;
+}
+
+/**
  * Retrieves the full public profile of a player by their Roblox user ID.
- * Includes coins, gems, XP, rank, and all active faction memberships.
+ * Includes coins, gems, XP, rank, level, and all active faction memberships.
  *
  * @param robloxUserId - Roblox userId
  * @returns Full player profile
@@ -115,6 +160,9 @@ export async function getProfile(robloxUserId: number): Promise<PlayerProfile> {
     joinedAt: row.joinedAt,
   }));
 
+  const level = calculateLevel(player.xp);
+  const nextLevelXp = calculateXpForLevel(level + 1);
+
   return {
     id: player.id,
     robloxUserId: player.robloxUserId,
@@ -122,7 +170,9 @@ export async function getProfile(robloxUserId: number): Promise<PlayerProfile> {
     coins: player.coins,
     gems: player.gems,
     xp: player.xp,
-    rank: player.rank,
+    rank: player.rank as PlayerRank,
+    level,
+    nextLevelXp,
     loginStreak: player.loginStreak,
     lastSeen: player.lastSeen,
     createdAt: player.createdAt,

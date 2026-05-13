@@ -32,7 +32,7 @@ export const adminAuthGuard = new Elysia({ name: 'admin-auth-guard' }).use(ip())
 
     if (!adminKey || adminKey !== env.security.adminApiKey) {
       logger.warn(
-        { path: url.pathname, method: request.method, hasKey: !!adminKey },
+        { path: url.pathname, method: request.method, adminKey },
         'Admin auth failed — invalid or missing X-Admin-Key'
       );
       set.status = 401;
@@ -40,7 +40,7 @@ export const adminAuthGuard = new Elysia({ name: 'admin-auth-guard' }).use(ip())
     }
 
     logger.info(
-      { path: url.pathname, method: request.method, ip: ip },
+      { path: url.pathname, method: request.method, ip },
       'Admin request authenticated'
     );
   }

@@ -19,6 +19,7 @@ import {
   formatPaginatedResponse,
 } from '@/lib/response-helpers';
 import * as adminService from '@/services/admin/admin.service';
+import * as adminConfigService from '@/services/admin/admin-config.service';
 import { invalidateConfigCache } from '@/services/config/config.service';
 import {
   CreateWarSchema,
@@ -26,6 +27,7 @@ import {
   CreateFactionSchema,
   UpdateFactionSchema,
   UpdateGameConfigSchema,
+  BulkUpdateGameConfigSchema,
   CreateProductSchema,
   UpdateProductSchema,
   TransactionFilterSchema,
@@ -58,6 +60,12 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
   /** GET /admin/stats — Retrieve overview statistics */
   .get('/stats', async () => {
     const stats = await adminService.getDashboardStats();
+    return formatResponse(stats);
+  })
+
+  /** GET /admin/minigames — Retrieve mini-game aggregate stats */
+  .get('/minigames', async () => {
+    const stats = await adminService.getMinigameStats();
     return formatResponse(stats);
   })
 
@@ -178,7 +186,7 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
 
   /** GET /admin/config — Full game configuration key-value map */
   .get('/config', async () => {
-    const config = await adminService.getGameConfig();
+    const config = await adminConfigService.getGameConfig();
     return formatResponse(config);
   })
 
@@ -192,7 +200,20 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
       return formatErrorResponse('VALIDATION_ERROR', 'Invalid config update');
     }
 
-    await adminService.updateGameConfig(keyParam.data.key, bodyParsed.data, ADMIN_USERNAME);
+    await adminConfigService.updateGameConfig(keyParam.data.key, bodyParsed.data, ADMIN_USERNAME);
+    await invalidateConfigCache();
+    return formatSuccessResponse();
+  })
+
+  /** PUT /admin/config — Bulk update multiple config keys */
+  .put('/config', async ({ body, set }) => {
+    const parsed = BulkUpdateGameConfigSchema.safeParse(body);
+    if (!parsed.success) {
+      set.status = 400;
+      return formatErrorResponse('VALIDATION_ERROR', 'Invalid config data');
+    }
+
+    await adminConfigService.updateGameConfigBulk(parsed.data, ADMIN_USERNAME);
     await invalidateConfigCache();
     return formatSuccessResponse();
   })
@@ -203,7 +224,7 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
 
   /** GET /admin/products — Full product catalogue */
   .get('/products', async () => {
-    const productList = await adminService.listProducts();
+    const productList = await adminConfigService.listProducts();
     return formatResponse(productList);
   })
 
@@ -217,7 +238,7 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
       });
     }
 
-    const id = await adminService.createProduct(parsed.data);
+    const id = await adminConfigService.createProduct(parsed.data);
     set.status = 201;
     return formatResponse({ id });
   })
@@ -232,6 +253,6 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
       return formatErrorResponse('VALIDATION_ERROR', 'Invalid request');
     }
 
-    await adminService.updateProduct(paramParsed.data.id, bodyParsed.data);
+    await adminConfigService.updateProduct(paramParsed.data.id, bodyParsed.data);
     return formatSuccessResponse();
   });

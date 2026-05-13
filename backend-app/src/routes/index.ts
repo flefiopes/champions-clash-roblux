@@ -12,6 +12,7 @@ import { warRoutes } from './wars.routes';
 import { purchaseRoutes } from './purchases.routes';
 import { configRoutes } from './config.routes';
 import { adminRoutes } from './admin.routes';
+import { minigameRoutes } from './minigames.routes';
 
 /**
  * API routes aggregator.
@@ -27,5 +28,6 @@ export const apiRoutes = new Elysia({ prefix: '/api/v1' })
   .use(playerRoutes)
   .use(warRoutes)
   .use(purchaseRoutes)
+  .use(minigameRoutes)
   // Admin dashboard endpoints (X-Admin-Key)
   .use(adminRoutes);

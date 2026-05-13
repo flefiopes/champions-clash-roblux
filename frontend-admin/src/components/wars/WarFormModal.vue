@@ -86,7 +86,6 @@ const save = async () => {
 <template>
   <Dialog
     :visible="visible"
-    @update:visible="emit('update:visible', $event)"
     modal
     :header="war ? 'Modifier la guerre' : 'Créer une nouvelle guerre'"
     :style="{ width: '30rem' }"
@@ -96,6 +95,7 @@ const save = async () => {
       content: { class: 'bg-slate-900 pt-6' },
       footer: { class: 'bg-slate-900 border-t border-slate-800' }
     }"
+    @update:visible="emit('update:visible', $event)"
   >
     <div class="flex flex-col gap-6">
       <div class="flex flex-col gap-2">
@@ -112,7 +112,7 @@ const save = async () => {
       <div class="flex items-center gap-2">
         <Checkbox
           v-model="form.reset_weekly"
-          inputId="reset_weekly"
+          input-id="reset_weekly"
           binary
         />
         <label for="reset_weekly" class="text-sm text-slate-300 cursor-pointer">
@@ -125,9 +125,9 @@ const save = async () => {
         <Calendar
           id="ends_at"
           v-model="form.ends_at"
-          showTime
-          hourFormat="24"
-          dateFormat="dd/mm/yy"
+          show-time
+          hour-format="24"
+          date-format="dd/mm/yy"
           class="w-full"
           :pt="{
             input: { class: '!bg-slate-950 !border-slate-800 !text-white w-full' },
@@ -144,16 +144,16 @@ const save = async () => {
         icon="pi pi-times"
         text
         severity="secondary"
-        @click="close"
         class="!text-slate-400 hover:!text-white"
+        @click="close"
       />
       <Button
         label="Enregistrer"
         icon="pi pi-check"
-        @click="save"
         :loading="isSubmitting"
         :disabled="!form.name.trim()"
         class="!bg-indigo-600 hover:!bg-indigo-500 !border-none"
+        @click="save"
       />
     </template>
   </Dialog>

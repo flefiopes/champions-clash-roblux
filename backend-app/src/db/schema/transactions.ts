@@ -29,6 +29,7 @@ export const transactions = mysqlTable('transactions', {
     'gem_gain',
     'gem_spend',
     'point_contribution',
+    'xp_gain',
   ]).notNull(),
 
   /** Amount of currency moved (always positive; direction encoded in `type`) */

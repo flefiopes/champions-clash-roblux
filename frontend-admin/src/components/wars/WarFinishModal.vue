@@ -40,7 +40,6 @@ const confirmFinish = async () => {
 <template>
   <Dialog
     :visible="visible"
-    @update:visible="emit('update:visible', $event)"
     modal
     header="Terminer la guerre"
     :style="{ width: '28rem' }"
@@ -50,6 +49,7 @@ const confirmFinish = async () => {
       content: { class: 'bg-slate-900 pt-6' },
       footer: { class: 'bg-slate-900 border-t border-slate-800' }
     }"
+    @update:visible="emit('update:visible', $event)"
   >
     <div class="flex items-start gap-4">
       <div class="rounded-full bg-red-500/10 p-3">
@@ -71,16 +71,16 @@ const confirmFinish = async () => {
         icon="pi pi-times"
         text
         severity="secondary"
-        @click="close"
         class="!text-slate-400 hover:!text-white"
+        @click="close"
       />
       <Button
         label="Terminer la guerre"
         icon="pi pi-check"
         severity="danger"
-        @click="confirmFinish"
         :loading="isSubmitting"
         class="!bg-red-600 hover:!bg-red-500 !border-none"
+        @click="confirmFinish"
       />
     </template>
   </Dialog>

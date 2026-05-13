@@ -28,6 +28,7 @@ export interface Faction {
   name: string;
   colorHex: string;
   slogan: string;
+  totalPoints: number;
   createdAt: string;
 }
 
@@ -42,14 +43,15 @@ export interface UpdateFactionDto {
   name?: string;
   color_hex?: string;
   slogan?: string;
+  total_points?: number;
 }
 
 export interface GameConfig {
-  id: number;
   globalMultiplier: number;
   enablePurchases: boolean;
   enablePointContributions: boolean;
   maxLevel: number;
+  minigames: Record<string, { enabled: boolean; max_reward: number }>;
   updatedAt: string;
 }
 
@@ -58,6 +60,7 @@ export interface UpdateGameConfigDto {
   enablePurchases?: boolean;
   enablePointContributions?: boolean;
   maxLevel?: number;
+  minigames?: Record<string, { enabled: boolean; max_reward: number }>;
 }
 
 export interface Product {
@@ -93,13 +96,20 @@ export interface UpdateProductDto {
 }
 
 export interface Transaction {
-  id: number;
+  id: string;
   playerId: string;
-  type: 'coin_gain' | 'coin_spend' | 'gem_gain' | 'gem_spend';
+  username?: string;
+  type: 'coin_gain' | 'coin_spend' | 'gem_gain' | 'gem_spend' | 'point_contribution' | 'xp_gain';
   amount: number;
-  referenceId: string | null;
-  description: string | null;
+  source: string;
+  meta: any;
   createdAt: string;
+}
+
+export interface MinigameStat {
+  minigameId: string;
+  totalRuns: number;
+  totalCoins: number;
 }
 
 export interface DashboardStats {

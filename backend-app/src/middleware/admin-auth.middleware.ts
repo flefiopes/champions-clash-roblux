@@ -11,6 +11,7 @@ import { Elysia } from 'elysia';
 import { getEnvConfig } from '@/config';
 import { createChildLogger } from '@/lib/logger';
 import { formatErrorResponse } from '@/lib/response-helpers';
+import { ip } from 'elysia-ip';
 
 /** Admin auth middleware logger */
 const logger = createChildLogger({ module: 'admin-auth' });
@@ -22,9 +23,9 @@ const logger = createChildLogger({ module: 'admin-auth' });
  *
  * Returns 401 Unauthorized when the key is missing or incorrect.
  */
-export const adminAuthGuard = new Elysia({ name: 'admin-auth-guard' }).onBeforeHandle(
+export const adminAuthGuard = new Elysia({ name: 'admin-auth-guard' }).use(ip()).onBeforeHandle(
   { as: 'scoped' },
-  ({ request, set }) => {
+  ({ request, set, ip }) => {
     const env = getEnvConfig();
     const adminKey = request.headers.get('x-admin-key');
     const url = new URL(request.url);
@@ -38,11 +39,8 @@ export const adminAuthGuard = new Elysia({ name: 'admin-auth-guard' }).onBeforeH
       return formatErrorResponse('UNAUTHORIZED', 'Invalid or missing admin key');
     }
 
-    // Log authenticated admin access for audit trail
-    const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown';
-
     logger.info(
-      { path: url.pathname, method: request.method, ip: clientIp },
+      { path: url.pathname, method: request.method, ip: ip },
       'Admin request authenticated'
     );
   }

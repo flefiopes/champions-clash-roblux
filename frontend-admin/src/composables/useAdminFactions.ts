@@ -27,7 +27,7 @@ export function useAdminFactions() {
     mutationFn: ({ id, data }: { id: string; data: UpdateFactionDto }) =>
       apiRequest<Faction>({
         url: `/admin/factions/${id}`,
-        method: 'PUT',
+        method: 'PATCH',
         data,
       }),
     onSuccess: () => {

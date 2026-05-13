@@ -24,11 +24,22 @@ export function useAdminWars() {
   });
 
   const updateWar = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: UpdateWarDto }) =>
+    mutationFn: ({ id, data }: { id: string; data: UpdateWarDto }) =>
       apiRequest<War>({
         url: `/admin/wars/${id}`,
-        method: 'PUT',
+        method: 'PATCH',
         data,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey });
+    },
+  });
+
+  const finishWar = useMutation({
+    mutationFn: (id: string) =>
+      apiRequest<void>({
+        url: `/admin/wars/${id}/finish`,
+        method: 'POST',
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
@@ -39,5 +50,6 @@ export function useAdminWars() {
     warsQuery,
     createWar,
     updateWar,
+    finishWar,
   };
 }

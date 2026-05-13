@@ -1,22 +1,45 @@
 <script setup lang="ts">
 import { useAdminWars } from '@/composables/useAdminWars';
+import { useWarModals } from '@/composables/useWarModals';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Tag from 'primevue/tag';
 import ProgressSpinner from 'primevue/progressspinner';
+import Button from 'primevue/button';
+import WarFormModal from '@/components/wars/WarFormModal.vue';
+import WarFinishModal from '@/components/wars/WarFinishModal.vue';
 
 const { warsQuery } = useAdminWars();
+const {
+  isFormModalOpen,
+  isFinishModalOpen,
+  selectedWar,
+  openCreateModal,
+  openEditModal,
+  openFinishModal,
+} = useWarModals();
 
 const getSeverity = (status: string) => {
   switch (status) {
     case 'active':
       return 'success';
     case 'completed':
+    case 'finished':
       return 'info';
     case 'pending':
-      return 'warning';
+    case 'paused':
+      return 'warn';
     default:
-      return null;
+      return undefined;
+  }
+};
+
+const formatStatus = (status: string) => {
+  switch (status) {
+    case 'active': return 'Actif';
+    case 'paused': return 'En pause';
+    case 'finished': return 'Terminé';
+    default: return status;
   }
 };
 </script>
@@ -25,6 +48,12 @@ const getSeverity = (status: string) => {
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <h1 class="text-2xl font-bold tracking-tight text-white">Saisons / Guerres</h1>
+      <Button
+        label="Nouvelle Guerre"
+        icon="pi pi-plus"
+        @click="openCreateModal"
+        class="!bg-indigo-600 hover:!bg-indigo-500 !border-none"
+      />
     </div>
 
     <div v-if="warsQuery.isLoading.value" class="flex justify-center p-8">
@@ -49,27 +78,62 @@ const getSeverity = (status: string) => {
         </template>
 
         <Column
-field="id"
-header="ID"
-sortable
-style="width: 5%"/>
-        <Column field="seasonName" header="Saison" sortable/>
-        <Column field="startDate" header="Date de Début" sortable>
+          field="id"
+          header="ID"
+          sortable
+          style="width: 25%"
+        />
+        <Column field="name" header="Nom de la Saison" sortable style="width: 25%" />
+        <Column field="createdAt" header="Date de Création" sortable>
           <template #body="{ data }">
-            {{ new Date(data.startDate).toLocaleString('fr-FR') }}
+            {{ new Date(data.createdAt).toLocaleString('fr-FR') }}
           </template>
         </Column>
-        <Column field="endDate" header="Date de Fin" sortable>
+        <Column field="endsAt" header="Date de Fin" sortable>
           <template #body="{ data }">
-            {{ data.endDate ? new Date(data.endDate).toLocaleString('fr-FR') : '-' }}
+            {{ data.endsAt ? new Date(data.endsAt).toLocaleString('fr-FR') : '-' }}
           </template>
         </Column>
         <Column field="status" header="Statut" sortable>
           <template #body="{ data }">
-            <Tag :value="data.status" :severity="getSeverity(data.status)" />
+            <Tag :value="formatStatus(data.status)" :severity="getSeverity(data.status)" />
+          </template>
+        </Column>
+
+        <!-- Actions Column -->
+        <Column header="Actions" :exportable="false" style="min-width: 8rem">
+          <template #body="slotProps">
+            <div class="flex gap-2">
+              <Button
+                icon="pi pi-pencil"
+                outlined
+                rounded
+                class="!text-indigo-400 !border-indigo-400 hover:!bg-indigo-500/10"
+                @click="openEditModal(slotProps.data)"
+              />
+              <Button
+                icon="pi pi-stop-circle"
+                outlined
+                rounded
+                severity="danger"
+                class="!text-red-400 !border-red-400 hover:!bg-red-500/10"
+                @click="openFinishModal(slotProps.data)"
+                v-if="slotProps.data.status !== 'finished'"
+              />
+            </div>
           </template>
         </Column>
       </DataTable>
     </div>
+
+    <!-- Modals -->
+    <WarFormModal
+      v-model:visible="isFormModalOpen"
+      :war="selectedWar"
+    />
+    <WarFinishModal
+      v-model:visible="isFinishModalOpen"
+      :war="selectedWar"
+    />
   </div>
 </template>

@@ -52,6 +52,16 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
   )
 
   // ---------------------------------------------------------------------------
+  // Stats
+  // ---------------------------------------------------------------------------
+
+  /** GET /admin/stats — Retrieve overview statistics */
+  .get('/stats', async () => {
+    const stats = await adminService.getDashboardStats();
+    return formatResponse(stats);
+  })
+
+  // ---------------------------------------------------------------------------
   // Wars
   // ---------------------------------------------------------------------------
 
@@ -105,6 +115,12 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
   // ---------------------------------------------------------------------------
   // Factions
   // ---------------------------------------------------------------------------
+
+  /** GET /admin/factions — List all factions */
+  .get('/factions', async () => {
+    const data = await adminService.listFactions();
+    return formatResponse(data);
+  })
 
   /** POST /admin/factions — Create a faction for an existing war */
   .post('/factions', async ({ body, set }) => {

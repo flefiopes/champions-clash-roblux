@@ -24,6 +24,34 @@ import type {
 } from '@/validation';
 import type { PaginatedResponse } from '@/types';
 
+/**
+ * Returns dashboard statistics for the admin dashboard.
+ *
+ * @returns Object containing total users, total wars, active wars, and total factions
+ */
+export async function getDashboardStats(): Promise<Record<string, number>> {
+  const db = getDatabase();
+
+  const [
+    totalPlayersCount,
+    totalWarsCount,
+    activeWarsCount,
+    totalFactionsCount,
+  ] = await Promise.all([
+    db.select({ count: sql<number>`COUNT(*)` }).from(players),
+    db.select({ count: sql<number>`COUNT(*)` }).from(wars),
+    db.select({ count: sql<number>`COUNT(*)` }).from(wars).where(eq(wars.status, 'active')),
+    db.select({ count: sql<number>`COUNT(*)` }).from(factions),
+  ]);
+
+  return {
+    totalPlayers: totalPlayersCount[0]?.count ?? 0,
+    totalWars: totalWarsCount[0]?.count ?? 0,
+    activeWars: activeWarsCount[0]?.count ?? 0,
+    totalFactions: totalFactionsCount[0]?.count ?? 0,
+  };
+}
+
 /** Admin service logger */
 const logger = createChildLogger({ module: 'admin-service' });
 
@@ -177,6 +205,33 @@ export async function updateFaction(factionId: string, data: UpdateFactionInput)
     .where(eq(factions.id, factionId));
 
   logger.info({ factionId, changes: data }, 'Faction updated');
+}
+
+// ---------------------------------------------------------------------------
+// Factions (queries)
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns a list of all factions, including parent war name.
+ */
+export async function listFactions() {
+  const db = getDatabase();
+
+  const results = await db
+    .select({
+      id: factions.id,
+      warId: factions.warId,
+      warName: wars.name,
+      name: factions.name,
+      colorHex: factions.colorHex,
+      slogan: factions.slogan,
+      createdAt: factions.createdAt,
+    })
+    .from(factions)
+    .innerJoin(wars, eq(factions.warId, wars.id))
+    .orderBy(desc(factions.createdAt));
+
+  return results;
 }
 
 // ---------------------------------------------------------------------------

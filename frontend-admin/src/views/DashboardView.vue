@@ -2,9 +2,9 @@
 import { useAdminStats } from '@/composables/use-admin-stats';
 import {
   UsersIcon,
-  FolderDotIcon,
-  MusicIcon,
-  UserPlusIcon,
+  SwordsIcon,
+  ShieldIcon,
+  FlagIcon,
 } from 'lucide-vue-next';
 
 const { data: stats, isLoading, isError } = useAdminStats();
@@ -45,56 +45,56 @@ const { data: stats, isLoading, isError } = useAdminStats();
         <div class="absolute -right-6 -top-6 rounded-full bg-indigo-500/10 p-8">
           <UsersIcon class="h-8 w-8 text-indigo-400" />
         </div>
-        <dt class="truncate text-sm font-medium text-slate-400">Total Users</dt>
+        <dt class="truncate text-sm font-medium text-slate-400">Joueurs Totaux</dt>
         <dd class="mt-2 text-3xl font-semibold tracking-tight text-white">
-          {{ stats.totalUsers }}
+          {{ stats.totalPlayers }}
         </dd>
       </div>
 
-      <!-- Total Projects -->
+      <!-- Total Wars -->
       <div
         class="rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-sm relative overflow-hidden"
       >
-        <div class="absolute -right-6 -top-6 rounded-full bg-cyan-500/10 p-8">
-          <FolderDotIcon class="h-8 w-8 text-cyan-400" />
+        <div class="absolute -right-6 -top-6 rounded-full bg-red-500/10 p-8">
+          <SwordsIcon class="h-8 w-8 text-red-400" />
         </div>
         <dt class="truncate text-sm font-medium text-slate-400">
-          Total Projects
+          Guerres Totales
         </dt>
         <dd class="mt-2 text-3xl font-semibold tracking-tight text-white">
-          {{ stats.totalProjects }}
+          {{ stats.totalWars }}
         </dd>
       </div>
 
-      <!-- Total Tracks -->
+      <!-- Active Wars -->
       <div
         class="rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-sm relative overflow-hidden"
       >
         <div
-          class="absolute -right-6 -top-6 rounded-full bg-emerald-500/10 p-8"
+          class="absolute -right-6 -top-6 rounded-full bg-amber-500/10 p-8"
         >
-          <MusicIcon class="h-8 w-8 text-emerald-400" />
+          <ShieldIcon class="h-8 w-8 text-amber-400" />
         </div>
         <dt class="truncate text-sm font-medium text-slate-400">
-          Total Tracks
+          Guerres Actives
         </dt>
         <dd class="mt-2 text-3xl font-semibold tracking-tight text-white">
-          {{ stats.totalTracks }}
+          {{ stats.activeWars }}
         </dd>
       </div>
 
-      <!-- New Users -->
+      <!-- Total Factions -->
       <div
         class="rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-sm relative overflow-hidden"
       >
-        <div class="absolute -right-6 -top-6 rounded-full bg-violet-500/10 p-8">
-          <UserPlusIcon class="h-8 w-8 text-violet-400" />
+        <div class="absolute -right-6 -top-6 rounded-full bg-emerald-500/10 p-8">
+          <FlagIcon class="h-8 w-8 text-emerald-400" />
         </div>
         <dt class="truncate text-sm font-medium text-slate-400">
-          New Users (This Month)
+          Factions Enregistrées
         </dt>
         <dd class="mt-2 text-3xl font-semibold tracking-tight text-white">
-          {{ stats.newUsersThisMonth }}
+          {{ stats.totalFactions }}
         </dd>
       </div>
     </div>

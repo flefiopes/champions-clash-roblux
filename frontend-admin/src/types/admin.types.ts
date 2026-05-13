@@ -1,44 +1,47 @@
 export interface War {
-  id: number;
-  seasonName: string;
-  startDate: string;
-  endDate: string | null;
-  status: 'pending' | 'active' | 'completed';
+  id: string;
+  name: string;
+  resetWeekly: boolean;
+  endsAt: string | null;
+  status: 'active' | 'paused' | 'finished';
   createdAt: string;
-  updatedAt: string;
+  createdBy: string;
 }
 
 export interface CreateWarDto {
-  seasonName: string;
+  name: string;
+  reset_weekly: boolean;
+  ends_at?: string | null;
 }
 
 export interface UpdateWarDto {
-  seasonName?: string;
-  status?: 'pending' | 'active' | 'completed';
+  name?: string;
+  status?: 'active' | 'paused' | 'finished';
+  reset_weekly?: boolean;
+  ends_at?: string | null;
 }
 
 export interface Faction {
   id: string;
+  warId: string;
+  warName?: string;
   name: string;
   colorHex: string;
-  maxPlayers: number;
-  isActive: boolean;
+  slogan: string;
   createdAt: string;
-  updatedAt: string;
 }
 
 export interface CreateFactionDto {
-  id: string;
+  war_id: string;
   name: string;
-  colorHex: string;
-  maxPlayers?: number;
+  color_hex: string;
+  slogan: string;
 }
 
 export interface UpdateFactionDto {
   name?: string;
-  colorHex?: string;
-  maxPlayers?: number;
-  isActive?: boolean;
+  color_hex?: string;
+  slogan?: string;
 }
 
 export interface GameConfig {
@@ -97,4 +100,21 @@ export interface Transaction {
   referenceId: string | null;
   description: string | null;
   createdAt: string;
+}
+
+export interface DashboardStats {
+  totalPlayers: number;
+  totalWars: number;
+  activeWars: number;
+  totalFactions: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }

@@ -14,7 +14,7 @@ services:
       # Force use of internal docker network names
       DATABASE_HOST: champions-clash-mysql
       REDIS_HOST: champions-clash-redis
-    command: sh -c "bun install && bun run --watch src/index.ts"
+    command: sh -c "bun install && bun db:push && bun run --watch src/index.ts"
     develop:
       watch:
         - action: sync

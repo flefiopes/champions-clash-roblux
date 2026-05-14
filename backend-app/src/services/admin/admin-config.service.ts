@@ -114,13 +114,15 @@ export async function createProduct(data: CreateProductInput): Promise<string> {
 
   await db.insert(products).values({
     id,
+    name: data.name,
     robloxProductId: data.roblox_product_id,
+    priceRobux: data.price_robux,
     type: data.type,
     value: data.value,
     isActive: data.is_active ?? true,
   });
 
-  logger.info({ productId: id, robloxProductId: data.roblox_product_id }, 'Product created');
+  logger.info({ productId: id, name: data.name, robloxProductId: data.roblox_product_id }, 'Product created');
   return id;
 }
 
@@ -146,6 +148,8 @@ export async function updateProduct(productId: string, data: UpdateProductInput)
   await db
     .update(products)
     .set({
+      ...(data.name && { name: data.name }),
+      ...(data.price_robux !== undefined && { priceRobux: data.price_robux }),
       ...(data.type && { type: data.type }),
       ...(data.value && { value: data.value }),
       ...(data.is_active !== undefined && { isActive: data.is_active }),

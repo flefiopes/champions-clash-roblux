@@ -27,7 +27,7 @@ export function useAdminProducts() {
     mutationFn: ({ id, data }: { id: string; data: UpdateProductDto }) =>
       apiRequest<Product>({
         url: `/admin/products/${id}`,
-        method: 'PUT',
+        method: 'PATCH',
         data,
       }),
     onSuccess: () => {

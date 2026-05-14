@@ -66,33 +66,30 @@ export interface UpdateGameConfigDto {
 export interface Product {
   id: string;
   name: string;
-  description: string | null;
+  robloxProductId: number;
   priceRobux: number;
-  rewardType: 'coins' | 'gems' | 'boost';
-  rewardAmount: number;
-  boostDurationSeconds: number | null;
-  boostMultiplier: number | null;
+  type: 'gems' | 'boost' | 'cosmetic' | 'faction_reset';
+  value: Record<string, any>;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface CreateProductDto {
-  id: string;
   name: string;
-  description?: string;
-  priceRobux: number;
-  rewardType: 'coins' | 'gems' | 'boost';
-  rewardAmount: number;
-  boostDurationSeconds?: number;
-  boostMultiplier?: number;
+  roblox_product_id: number;
+  price_robux: number;
+  type: 'gems' | 'boost' | 'cosmetic' | 'faction_reset';
+  value: Record<string, any>;
+  is_active?: boolean;
 }
 
 export interface UpdateProductDto {
   name?: string;
-  description?: string;
-  priceRobux?: number;
-  isActive?: boolean;
+  price_robux?: number;
+  type?: 'gems' | 'boost' | 'cosmetic' | 'faction_reset';
+  value?: Record<string, any>;
+  is_active?: boolean;
 }
 
 export interface Transaction {

@@ -54,17 +54,15 @@ export const BulkUpdateGameConfigSchema = z.record(
  * Schema for POST /admin/products.
  */
 export const CreateProductSchema = z.object({
-  /** Roblox Developer Product ID — must match the Roblox Studio configuration */
+  /** Display name for admin dashboard */
+  name: z.string().min(2).max(100),
+  /** Roblox Developer Product ID */
   roblox_product_id: z.number().int().positive(),
+  /** Price in Robux */
+  price_robux: z.number().int().min(0).default(0),
   /** Product category */
   type: z.enum(['gems', 'boost', 'cosmetic', 'faction_reset']),
-  /**
-   * Effect payload — structure depends on type:
-   * - gems:          { gems: number }
-   * - boost:         { boost: string, duration_seconds: number, multiplier: number }
-   * - cosmetic:      { item_id: string }
-   * - faction_reset: {}
-   */
+  /** Effect payload */
   value: z.record(z.string(), z.unknown()),
   is_active: z.boolean().default(true),
 });
@@ -73,6 +71,8 @@ export const CreateProductSchema = z.object({
  * Schema for PATCH /admin/products/:id.
  */
 export const UpdateProductSchema = z.object({
+  name: z.string().min(2).max(100).optional(),
+  price_robux: z.number().int().min(0).optional(),
   type: z.enum(['gems', 'boost', 'cosmetic', 'faction_reset']).optional(),
   value: z.record(z.string(), z.unknown()).optional(),
   is_active: z.boolean().optional(),

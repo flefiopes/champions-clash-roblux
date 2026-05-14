@@ -25,11 +25,14 @@ export const products = mysqlTable('products', {
   /** Internal UUID primary key */
   id: varchar('id', { length: 36 }).primaryKey(),
 
-  /**
-   * Roblox Developer Product ID.
-   * Must match the product configured in Roblox Studio exactly.
-   */
+  /** Display name for admin dashboard */
+  name: varchar('name', { length: 100 }).notNull(),
+
+  /** Roblox Developer Product ID. */
   robloxProductId: int('roblox_product_id').notNull().unique(),
+
+  /** Price in Robux (for display/info purposes) */
+  priceRobux: int('price_robux').notNull().default(0),
 
   /** Product category — determines how value JSON is interpreted */
   type: mysqlEnum('type', ['gems', 'boost', 'cosmetic', 'faction_reset']).notNull(),

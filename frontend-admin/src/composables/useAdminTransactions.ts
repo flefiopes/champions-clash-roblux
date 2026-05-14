@@ -8,10 +8,13 @@ export function useAdminTransactions(limit = 100, filters: Record<string, string
   const transactionsQuery = useQuery({
     queryKey,
     queryFn: () => {
-      const params = new URLSearchParams({ limit: limit.toString(), ...filters });
-      return apiRequest<PaginatedResponse<Transaction>>({ 
-        url: `/admin/transactions?${params.toString()}`, 
-        method: 'GET' 
+      const params = new URLSearchParams({
+        limit: limit.toString(),
+        ...filters,
+      });
+      return apiRequest<PaginatedResponse<Transaction>>({
+        url: `/admin/transactions?${params.toString()}`,
+        method: 'GET',
       });
     },
   });

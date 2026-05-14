@@ -10,12 +10,14 @@ export {
   CoinTransactionSchema,
   PointContributionSchema,
   FactionJoinSchema,
+  UpgradeAttributeSchema,
 } from './player.validation';
 export type {
   PlayerLoginInput,
   CoinTransactionInput,
   PointContributionInput,
   FactionJoinInput,
+  UpgradeAttributeInput,
 } from './player.validation';
 
 export { CreateWarSchema, UpdateWarSchema } from './war.validation';
@@ -30,6 +32,10 @@ export {
   UpdateProductSchema,
   AdminPaginationSchema,
   TransactionFilterSchema,
+  CreateQuestSchema,
+  UpdateQuestSchema,
+  CreateBadgeSchema,
+  UpdateBadgeSchema,
 } from './admin.validation';
 export type {
   CreateFactionInput,
@@ -40,6 +46,10 @@ export type {
   UpdateProductInput,
   AdminPaginationInput,
   TransactionFilterInput,
+  CreateQuestInput,
+  UpdateQuestInput,
+  CreateBadgeInput,
+  UpdateBadgeInput,
 } from './admin.validation';
 
 export { ProcessPurchaseSchema } from './purchase.validation';

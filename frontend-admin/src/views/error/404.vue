@@ -1,5 +1,4 @@
 <script setup lang="ts">
-
 import { onMounted, onUnmounted } from 'vue';
 import { RouterLink } from 'vue-router';
 import Button from 'primevue/button';
@@ -22,27 +21,18 @@ onUnmounted(() => {
       class="relative w-full max-w-lg overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/50 p-12 shadow-2xl backdrop-blur-xl"
     >
       <!-- Decorative background blur effects -->
-      <div
-        class="absolute -top-24 -left-24 h-48 w-48 rounded-full bg-indigo-500/10 blur-3xl"
-      ></div>
+      <div class="absolute -top-24 -left-24 h-48 w-48 rounded-full bg-indigo-500/10 blur-3xl"></div>
       <div
         class="absolute -bottom-24 -right-24 h-48 w-48 rounded-full bg-purple-500/10 blur-3xl"
       ></div>
 
       <div class="relative z-10 flex flex-col items-center">
-        <h1
-          class="mb-2 text-7xl font-black tracking-tight text-white sm:text-8xl"
-        >
-          404
-        </h1>
+        <h1 class="mb-2 text-7xl font-black tracking-tight text-white sm:text-8xl">404</h1>
 
-        <h2 class="mb-6 text-2xl font-bold text-slate-100 sm:text-3xl">
-          Page Not Found
-        </h2>
+        <h2 class="mb-6 text-2xl font-bold text-slate-100 sm:text-3xl">Page Not Found</h2>
 
         <p class="mb-10 text-lg leading-relaxed text-slate-400">
-          The page you're looking for doesn't exist or has been moved to a
-          different location.
+          The page you're looking for doesn't exist or has been moved to a different location.
         </p>
 
         <RouterLink to="/">

@@ -45,10 +45,7 @@ export const UpdateGameConfigSchema = z.object({
 /**
  * Schema for PUT /admin/config.
  */
-export const BulkUpdateGameConfigSchema = z.record(
-  z.string().min(1).max(100),
-  z.unknown()
-);
+export const BulkUpdateGameConfigSchema = z.record(z.string().min(1).max(100), z.unknown());
 
 /**
  * Schema for POST /admin/products.
@@ -107,3 +104,57 @@ export type CreateProductInput = z.infer<typeof CreateProductSchema>;
 export type UpdateProductInput = z.infer<typeof UpdateProductSchema>;
 export type AdminPaginationInput = z.infer<typeof AdminPaginationSchema>;
 export type TransactionFilterInput = z.infer<typeof TransactionFilterSchema>;
+
+// ---------------------------------------------------------------------------
+// Quests
+// ---------------------------------------------------------------------------
+
+/** Zod schema for creating a new quest definition */
+export const CreateQuestSchema = z.object({
+  type: z.enum(['daily', 'recruit', 'seasonal', 'secret']),
+  title: z.string().min(1).max(150),
+  description: z.string().min(1),
+  requirement_type: z.string().min(1).max(50),
+  requirement_value: z.number().int().positive(),
+  reward_coins: z.number().int().min(0).optional().default(0),
+  reward_gems: z.number().int().min(0).optional().default(0),
+  reward_xp: z.number().int().min(0).optional().default(0),
+  reward_badge_id: z.string().uuid().nullable().optional(),
+  expires_at: z.string().datetime().nullable().optional(),
+});
+
+/** Inferred type for quest creation */
+export type CreateQuestInput = z.infer<typeof CreateQuestSchema>;
+
+/** Zod schema for updating an existing quest */
+export const UpdateQuestSchema = CreateQuestSchema.partial();
+
+/** Inferred type for quest update */
+export type UpdateQuestInput = z.infer<typeof UpdateQuestSchema>;
+
+// ---------------------------------------------------------------------------
+// Badges
+// ---------------------------------------------------------------------------
+
+/** Zod schema for creating a new badge definition */
+export const CreateBadgeSchema = z.object({
+  slug: z
+    .string()
+    .min(1)
+    .max(100)
+    .regex(/^[a-z0-9-]+$/),
+  name: z.string().min(1).max(150),
+  description: z.string().min(1),
+  image_url: z.string().url().or(z.string().startsWith('/')),
+  rarity: z.enum(['common', 'rare', 'epic', 'legendary', 'secret']).optional().default('common'),
+  is_permanent: z.boolean().optional().default(true),
+});
+
+/** Inferred type for badge creation */
+export type CreateBadgeInput = z.infer<typeof CreateBadgeSchema>;
+
+/** Zod schema for updating an existing badge */
+export const UpdateBadgeSchema = CreateBadgeSchema.partial();
+
+/** Inferred type for badge update */
+export type UpdateBadgeInput = z.infer<typeof UpdateBadgeSchema>;

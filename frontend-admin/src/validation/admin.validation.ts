@@ -21,6 +21,4 @@ export const updateProjectStatusSchema = z.object({
   }),
 });
 
-export type UpdateProjectStatusInputType = z.infer<
-  typeof updateProjectStatusSchema
->;
+export type UpdateProjectStatusInputType = z.infer<typeof updateProjectStatusSchema>;

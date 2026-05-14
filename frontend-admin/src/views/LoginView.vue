@@ -55,24 +55,27 @@ const onSubmit = handleSubmit(async (values) => {
 
 <template>
   <div class="p-dark flex min-h-screen items-center justify-center bg-slate-950 px-4">
-    <div class="w-full max-w-md space-y-8 rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-2xl">
+    <div
+      class="w-full max-w-md space-y-8 rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-2xl"
+    >
       <div class="text-center">
-        <h2 class="text-3xl font-bold tracking-tight text-white">
-          Champions Clash
-        </h2>
-        <p class="mt-2 text-sm text-slate-400">
-          Enter Admin Key to access the dashboard
-        </p>
+        <h2 class="text-3xl font-bold tracking-tight text-white">Champions Clash</h2>
+        <p class="mt-2 text-sm text-slate-400">Enter Admin Key to access the dashboard</p>
       </div>
 
       <form class="mt-8 space-y-6" @submit="onSubmit">
-        <div v-if="globalError" class="rounded-lg bg-red-500/10 p-3 text-sm text-red-500 text-center">
+        <div
+          v-if="globalError"
+          class="rounded-lg bg-red-500/10 p-3 text-sm text-red-500 text-center"
+        >
           {{ globalError }}
         </div>
 
         <div class="space-y-4">
           <div>
-            <label for="adminKey" class="mb-2 block text-sm font-medium text-slate-300">Admin Key</label>
+            <label for="adminKey" class="mb-2 block text-sm font-medium text-slate-300"
+              >Admin Key</label
+            >
             <Password
               id="adminKey"
               v-model="adminKey"
@@ -97,4 +100,3 @@ const onSubmit = handleSubmit(async (values) => {
     </div>
   </div>
 </template>
-

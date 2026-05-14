@@ -23,12 +23,8 @@ function handleLogout() {
     <div class="flex items-center gap-4">
       <div class="flex items-center gap-3">
         <div class="flex flex-col text-right">
-          <span class="text-sm font-medium text-slate-200">
-            Admin User
-          </span>
-          <span class="text-xs text-slate-400">
-            Administrator
-          </span>
+          <span class="text-sm font-medium text-slate-200"> Admin User </span>
+          <span class="text-xs text-slate-400"> Administrator </span>
         </div>
         <div
           class="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-500/20 text-indigo-400"

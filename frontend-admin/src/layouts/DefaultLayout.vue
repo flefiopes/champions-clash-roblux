@@ -4,9 +4,7 @@ import DefaultNavBar from './DefaultNavBar.vue';
 </script>
 
 <template>
-  <div
-    class="flex h-screen flex-col overflow-hidden bg-cream-50 text-cream-900"
-  >
+  <div class="flex h-screen flex-col overflow-hidden bg-cream-50 text-cream-900">
     <!-- Navbar -->
     <DefaultNavBar />
 

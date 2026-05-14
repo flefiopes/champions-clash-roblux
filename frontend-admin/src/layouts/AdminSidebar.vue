@@ -28,6 +28,8 @@ const navigation = [
   { name: 'Factions', href: '/factions', icon: ShieldIcon },
   { name: 'Mini-jeux', href: '/minigames', icon: Gamepad2Icon },
   { name: 'Logs Mini-jeux', href: '/minigames/logs', icon: ScrollTextIcon },
+  { name: 'Quêtes', href: '/quests', icon: ScrollTextIcon },
+  { name: 'Badges', href: '/badges', icon: ShieldIcon },
   { name: 'Boutique', href: '/products', icon: ShoppingCartIcon },
   { name: 'Configuration', href: '/config', icon: SettingsIcon },
   { name: 'Audit', href: '/transactions', icon: HistoryIcon },
@@ -40,10 +42,7 @@ const navigation = [
     :class="props.isOpen ? 'w-64' : 'w-20'"
   >
     <div class="flex h-16 items-center justify-between px-4">
-      <div
-        v-if="props.isOpen"
-        class="flex items-center gap-3 overflow-hidden whitespace-nowrap"
-      >
+      <div v-if="props.isOpen" class="flex items-center gap-3 overflow-hidden whitespace-nowrap">
         <span
           class="text-xl font-bold bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent"
         >
@@ -75,9 +74,7 @@ const navigation = [
           :is="item.icon"
           class="mr-3 h-5 w-5 flex-shrink-0"
           :class="[
-            route.path === item.href
-              ? 'text-indigo-400'
-              : 'text-slate-400 group-hover:text-white',
+            route.path === item.href ? 'text-indigo-400' : 'text-slate-400 group-hover:text-white',
           ]"
         />
         <span v-if="props.isOpen">{{ item.name }}</span>

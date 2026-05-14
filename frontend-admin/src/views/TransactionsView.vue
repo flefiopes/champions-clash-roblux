@@ -17,7 +17,9 @@ const getTypeSeverity = (type: string) => {
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold tracking-tight text-white">Registre des Transactions (Audit)</h1>
+      <h1 class="text-2xl font-bold tracking-tight text-white">
+        Registre des Transactions (Audit)
+      </h1>
     </div>
 
     <div v-if="transactionsQuery.isLoading.value" class="flex justify-center p-8">
@@ -25,19 +27,21 @@ const getTypeSeverity = (type: string) => {
     </div>
 
     <div
-v-else-if="transactionsQuery.isError.value"
-      class="text-red-400 p-4 bg-red-500/10 rounded-xl border border-red-500/20">
+      v-else-if="transactionsQuery.isError.value"
+      class="text-red-400 p-4 bg-red-500/10 rounded-xl border border-red-500/20"
+    >
       Une erreur est survenue lors du chargement des données.
     </div>
 
     <div v-else class="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden shadow-sm">
       <DataTable
-:value="transactionsQuery.data.value?.data || []"
-paginator
-:rows="15"
-data-key="id"
+        :value="transactionsQuery.data.value?.data || []"
+        paginator
+        :rows="15"
+        data-key="id"
         class="p-datatable-sm w-full"
-row-hover>
+        row-hover
+      >
         <template #empty>
           <div class="p-6 text-center text-slate-400">Aucune transaction trouvée.</div>
         </template>
@@ -56,7 +60,11 @@ row-hover>
         </Column>
         <Column field="amount" header="Montant" sortable>
           <template #body="{ data }">
-            <span :class="data.type.includes('gain') ? 'text-green-400 font-bold' : 'text-red-400 font-bold'">
+            <span
+              :class="
+                data.type.includes('gain') ? 'text-green-400 font-bold' : 'text-red-400 font-bold'
+              "
+            >
               {{ data.type.includes('gain') ? '+' : '-' }}{{ data.amount }}
             </span>
           </template>

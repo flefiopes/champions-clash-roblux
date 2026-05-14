@@ -1,10 +1,10 @@
 /* Google Fonts — Inter */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 /**
  * Global stylesheet — TailwindCSS 4 entry point with PrimeVue integration.
  * Defines the cream/warm light theme palette and base styles.
  */
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @plugin 'tailwindcss-primeui';
 
@@ -40,7 +40,7 @@
   }
 
   body {
-    font-family: "Inter", sans-serif;
+    font-family: 'Inter', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     background-color: var(--color-cream-50);

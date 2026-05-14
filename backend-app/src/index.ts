@@ -64,7 +64,13 @@ export function createApp() {
       cors({
         origin: env.corsOrigin,
         credentials: true,
-        allowedHeaders: ['Content-Type', 'Authorization', 'X-Real-IP', 'X-Forwarded-For', 'X-Admin-Key'],
+        allowedHeaders: [
+          'Content-Type',
+          'Authorization',
+          'X-Real-IP',
+          'X-Forwarded-For',
+          'X-Admin-Key',
+        ],
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       })
     )

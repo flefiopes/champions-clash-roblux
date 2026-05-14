@@ -44,4 +44,3 @@ export function clearAdminKey(): void {
   if (!isBrowser()) return;
   localStorage.removeItem(ADMIN_KEY);
 }
-

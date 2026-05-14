@@ -51,6 +51,9 @@ export interface GameConfig {
   enablePurchases: boolean;
   enablePointContributions: boolean;
   maxLevel: number;
+  dailyQuestsCount: number;
+  idleCoinBaseRate: number;
+  rubberBandMultiplier: number;
   minigames: Record<string, { enabled: boolean; max_reward: number }>;
   updatedAt: string;
 }
@@ -60,6 +63,9 @@ export interface UpdateGameConfigDto {
   enablePurchases?: boolean;
   enablePointContributions?: boolean;
   maxLevel?: number;
+  dailyQuestsCount?: number;
+  idleCoinBaseRate?: number;
+  rubberBandMultiplier?: number;
   minigames?: Record<string, { enabled: boolean; max_reward: number }>;
 }
 
@@ -69,7 +75,7 @@ export interface Product {
   robloxProductId: number;
   priceRobux: number;
   type: 'gems' | 'boost' | 'cosmetic' | 'faction_reset';
-  value: Record<string, any>;
+  value: Record<string, unknown>;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -77,10 +83,10 @@ export interface Product {
 
 export interface CreateProductDto {
   name: string;
-  roblox_product_id: number;
+  roblox_product_id: number | null;
   price_robux: number;
   type: 'gems' | 'boost' | 'cosmetic' | 'faction_reset';
-  value: Record<string, any>;
+  value: Record<string, unknown>;
   is_active?: boolean;
 }
 
@@ -88,15 +94,72 @@ export interface UpdateProductDto {
   name?: string;
   price_robux?: number;
   type?: 'gems' | 'boost' | 'cosmetic' | 'faction_reset';
-  value?: Record<string, any>;
+  value?: Record<string, unknown>;
   is_active?: boolean;
+}
+
+export interface Badge {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  imageUrl: string;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary' | 'secret';
+  isPermanent: boolean;
+  createdAt: string;
+}
+
+export interface CreateBadgeDto {
+  slug: string;
+  name: string;
+  description: string;
+  image_url: string;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary' | 'secret';
+  is_permanent?: boolean;
+}
+
+export interface Quest {
+  id: string;
+  type: 'daily' | 'recruit' | 'seasonal' | 'secret';
+  title: string;
+  description: string;
+  requirementType: string;
+  requirementValue: number;
+  rewardCoins: number;
+  rewardGems: number;
+  rewardXp: number;
+  rewardBadgeId: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
+export interface CreateQuestDto {
+  type: 'daily' | 'recruit' | 'seasonal' | 'secret';
+  title: string;
+  description: string;
+  requirement_type: string;
+  requirement_value: number;
+  reward_coins: number;
+  reward_gems: number;
+  reward_xp: number;
+  reward_badge_id?: string | null;
+  expires_at?: string | null;
 }
 
 export interface Transaction {
   id: string;
   playerId: string;
   username?: string;
-  type: 'coin_gain' | 'coin_spend' | 'gem_gain' | 'gem_spend' | 'point_contribution' | 'xp_gain';
+  type:
+    | 'coin_gain'
+    | 'coin_spend'
+    | 'gem_gain'
+    | 'gem_spend'
+    | 'point_contribution'
+    | 'xp_gain'
+    | 'idle_collect'
+    | 'upgrade_buy'
+    | 'quest_reward';
   amount: number;
   source: string;
   meta: Record<string, unknown> | null;
@@ -114,6 +177,25 @@ export interface DashboardStats {
   totalWars: number;
   activeWars: number;
   totalFactions: number;
+  dailyActiveUsers: number;
+  avgPrestige: number;
+  activeQuests: number;
+}
+
+export interface RecentActivity {
+  recentQuests: Array<{
+    id: string;
+    playerId: string;
+    pseudo: string;
+    completedAt: string;
+  }>;
+  recentTransactions: Array<{
+    id: string;
+    pseudo: string;
+    type: string;
+    amount: number;
+    createdAt: string;
+  }>;
 }
 
 export interface PaginatedResponse<T> {

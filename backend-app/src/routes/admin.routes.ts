@@ -20,6 +20,7 @@ import {
 } from '@/lib/response-helpers';
 import * as adminService from '@/services/admin/admin.service';
 import * as adminConfigService from '@/services/admin/admin-config.service';
+import * as adminRewardsService from '@/services/admin/admin-rewards.service';
 import { invalidateConfigCache } from '@/services/config/config.service';
 import {
   CreateWarSchema,
@@ -31,6 +32,10 @@ import {
   CreateProductSchema,
   UpdateProductSchema,
   TransactionFilterSchema,
+  CreateQuestSchema,
+  UpdateQuestSchema,
+  CreateBadgeSchema,
+  UpdateBadgeSchema,
 } from '@/validation';
 
 /** Zod schema for UUID path parameters */
@@ -61,6 +66,12 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
   .get('/stats', async () => {
     const stats = await adminService.getDashboardStats();
     return formatResponse(stats);
+  })
+
+  /** GET /admin/activity — Recent player activity monitoring */
+  .get('/activity', async () => {
+    const activity = await adminService.getRecentActivity();
+    return formatResponse(activity);
   })
 
   /** GET /admin/minigames — Retrieve mini-game aggregate stats */
@@ -254,5 +265,83 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
     }
 
     await adminConfigService.updateProduct(paramParsed.data.id, bodyParsed.data);
+    return formatSuccessResponse();
+  })
+
+  // ---------------------------------------------------------------------------
+  // Quests
+  // ---------------------------------------------------------------------------
+
+  /** GET /admin/quests — List all quest definitions */
+  .get('/quests', async () => {
+    const data = await adminRewardsService.listQuests();
+    return formatResponse(data);
+  })
+
+  /** POST /admin/quests — Create a new quest definition */
+  .post('/quests', async ({ body, set }) => {
+    const parsed = CreateQuestSchema.safeParse(body);
+    if (!parsed.success) {
+      set.status = 400;
+      return formatErrorResponse('VALIDATION_ERROR', 'Invalid quest data', {
+        issues: parsed.error.issues,
+      });
+    }
+
+    const id = await adminRewardsService.createQuest(parsed.data);
+    set.status = 201;
+    return formatResponse({ id });
+  })
+
+  /** PATCH /admin/quests/:id — Update a quest definition */
+  .patch('/quests/:id', async ({ params, body, set }) => {
+    const paramParsed = UuidParam.safeParse(params);
+    const bodyParsed = UpdateQuestSchema.safeParse(body);
+
+    if (!paramParsed.success || !bodyParsed.success) {
+      set.status = 400;
+      return formatErrorResponse('VALIDATION_ERROR', 'Invalid request');
+    }
+
+    await adminRewardsService.updateQuest(paramParsed.data.id, bodyParsed.data);
+    return formatSuccessResponse();
+  })
+
+  // ---------------------------------------------------------------------------
+  // Badges
+  // ---------------------------------------------------------------------------
+
+  /** GET /admin/badges — List all badge definitions */
+  .get('/badges', async () => {
+    const data = await adminRewardsService.listBadges();
+    return formatResponse(data);
+  })
+
+  /** POST /admin/badges — Create a new badge definition */
+  .post('/badges', async ({ body, set }) => {
+    const parsed = CreateBadgeSchema.safeParse(body);
+    if (!parsed.success) {
+      set.status = 400;
+      return formatErrorResponse('VALIDATION_ERROR', 'Invalid badge data', {
+        issues: parsed.error.issues,
+      });
+    }
+
+    const id = await adminRewardsService.createBadge(parsed.data);
+    set.status = 201;
+    return formatResponse({ id });
+  })
+
+  /** PATCH /admin/badges/:id — Update a badge definition */
+  .patch('/badges/:id', async ({ params, body, set }) => {
+    const paramParsed = UuidParam.safeParse(params);
+    const bodyParsed = UpdateBadgeSchema.safeParse(body);
+
+    if (!paramParsed.success || !bodyParsed.success) {
+      set.status = 400;
+      return formatErrorResponse('VALIDATION_ERROR', 'Invalid request');
+    }
+
+    await adminRewardsService.updateBadge(paramParsed.data.id, bodyParsed.data);
     return formatSuccessResponse();
   });

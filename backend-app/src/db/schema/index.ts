@@ -15,3 +15,7 @@ export * from './products';
 export * from './processed-purchases';
 export * from './game-config';
 export * from './war-weekly-results';
+export * from './quests';
+export * from './player-quests';
+export * from './badges';
+export * from './player-badges';

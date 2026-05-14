@@ -12,16 +12,19 @@ import { robloxAuthGuard } from '@/middleware/roblox-auth.middleware';
 import { rateLimit } from '@/lib/rate-limiter';
 import { getEnvConfig } from '@/config';
 import { formatResponse, formatErrorResponse } from '@/lib/response-helpers';
-import * as playerService from '@/services/player/player.service';
 import * as economyService from '@/services/economy/economy.service';
 import * as warService from '@/services/war/war.service';
+import * as questService from '@/services/quest/quest.service';
+import * as badgeService from '@/services/badge/badge.service';
+import * as playerService from '@/services/player/player.service';
+import * as characterService from '@/services/player/character.service';
 import {
   PlayerLoginSchema,
   CoinTransactionSchema,
   PointContributionSchema,
   FactionJoinSchema,
+  UpgradeAttributeSchema,
 } from '@/validation';
-
 
 /** Zod schema for robloxId path parameter */
 const RobloxIdParam = z.object({ robloxId: z.coerce.number().int().positive() });
@@ -48,7 +51,11 @@ export const playerRoutes = new Elysia({ prefix: '/players' })
     }
 
     const { roblox_user_id, username } = parsed.data;
-    await playerService.loginOrCreate(roblox_user_id, username);
+    const playerId = await playerService.loginOrCreate(roblox_user_id, username);
+
+    // Assign daily quests on login if needed
+    await questService.assignDailyQuests(playerId);
+
     const profile = await playerService.getProfile(roblox_user_id);
     set.status = 200;
     return formatResponse(profile);
@@ -87,6 +94,9 @@ export const playerRoutes = new Elysia({ prefix: '/players' })
     const { amount, source, meta } = bodyParsed.data;
     const newBalance = await economyService.addCoins(profile.id, amount, source, meta);
 
+    // Track quest progress
+    await questService.updateQuestProgress(profile.id, 'coins_earned', amount);
+
     return formatResponse({ newCoinBalance: newBalance });
   })
 
@@ -117,6 +127,9 @@ export const playerRoutes = new Elysia({ prefix: '/players' })
       bodyParsed.data.faction_id,
       bodyParsed.data.war_id
     );
+
+    // Track quest progress
+    await questService.updateQuestProgress(profile.id, 'points_contributed', result.pointsAwarded);
 
     return formatResponse(result);
   })
@@ -169,4 +182,68 @@ export const playerRoutes = new Elysia({ prefix: '/players' })
     const profile = await playerService.getProfile(parsed.data.robloxId);
     const boosts = await economyService.getActiveBoosts(profile.id);
     return formatResponse(boosts);
+  })
+
+  /**
+   * GET /players/:robloxId/quests
+   * Returns all currently assigned quests and their progress.
+   */
+  .get('/:robloxId/quests', async ({ params }) => {
+    const parsed = RobloxIdParam.parse(params);
+    const profile = await playerService.getProfile(parsed.robloxId);
+    const quests = await questService.getPlayerQuests(profile.id);
+    return formatResponse(quests);
+  })
+
+  /**
+   * POST /players/:robloxId/quests/:questId/claim
+   * Claims rewards for a completed quest.
+   */
+  .post('/:robloxId/quests/:questId/claim', async ({ params }) => {
+    const { robloxId, questId } = z
+      .object({ robloxId: z.coerce.number(), questId: z.string() })
+      .parse(params);
+    const profile = await playerService.getProfile(robloxId);
+    const rewards = await questService.claimQuestReward(profile.id, questId);
+    return formatResponse(rewards);
+  })
+
+  /**
+   * GET /players/:robloxId/badges
+   * Returns the player's earned badge collection.
+   */
+  .get('/:robloxId/badges', async ({ params }) => {
+    const parsed = RobloxIdParam.parse(params);
+    const profile = await playerService.getProfile(parsed.robloxId);
+    const badges = await badgeService.getPlayerBadges(profile.id);
+    return formatResponse(badges);
+  })
+
+  /**
+   * POST /players/:robloxId/idle/collect
+   * Collects accumulated idle coin gains.
+   */
+  .post('/:robloxId/idle/collect', async ({ params }) => {
+    const parsed = RobloxIdParam.parse(params);
+    const profile = await playerService.getProfile(parsed.robloxId);
+    const result = await characterService.collectIdleCoins(profile.id);
+    return formatResponse(result);
+  })
+
+  /**
+   * POST /players/:robloxId/upgrade
+   * Upgrades a character attribute (force, speed, luck).
+   */
+  .post('/:robloxId/upgrade', async ({ params, body, set }) => {
+    const paramParsed = RobloxIdParam.safeParse(params);
+    const bodyParsed = UpgradeAttributeSchema.safeParse(body);
+
+    if (!paramParsed.success || !bodyParsed.success) {
+      set.status = 400;
+      return formatErrorResponse('VALIDATION_ERROR', 'Invalid request');
+    }
+
+    const profile = await playerService.getProfile(paramParsed.data.robloxId);
+    const result = await characterService.upgradeAttribute(profile.id, bodyParsed.data.attribute);
+    return formatResponse(result);
   });

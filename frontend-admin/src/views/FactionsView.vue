@@ -8,12 +8,7 @@ import Button from 'primevue/button';
 import FactionFormModal from '@/components/factions/FactionFormModal.vue';
 
 const { factionsQuery } = useAdminFactions();
-const {
-  isFormModalOpen,
-  selectedFaction,
-  openCreateModal,
-  openEditModal,
-} = useFactionModals();
+const { isFormModalOpen, selectedFaction, openCreateModal, openEditModal } = useFactionModals();
 </script>
 
 <template>
@@ -32,7 +27,10 @@ const {
       <ProgressSpinner />
     </div>
 
-    <div v-else-if="factionsQuery.isError.value" class="text-red-400 p-4 bg-red-500/10 rounded-xl border border-red-500/20">
+    <div
+      v-else-if="factionsQuery.isError.value"
+      class="text-red-400 p-4 bg-red-500/10 rounded-xl border border-red-500/20"
+    >
       Une erreur est survenue lors du chargement des données.
     </div>
 
@@ -49,7 +47,7 @@ const {
           <div class="p-6 text-center text-slate-400">Aucune faction trouvée.</div>
         </template>
 
-        <Column field="name" header="Nom" sortable/>
+        <Column field="name" header="Nom" sortable />
         <Column field="warName" header="Guerre" sortable>
           <template #body="{ data }">
             <span v-if="data.warName" class="text-slate-300">{{ data.warName }}</span>
@@ -69,7 +67,10 @@ const {
         <Column header="Couleur">
           <template #body="{ data }">
             <div class="flex items-center gap-2">
-              <div class="w-4 h-4 rounded-full border border-slate-700" :style="{ backgroundColor: data.colorHex }"></div>
+              <div
+                class="w-4 h-4 rounded-full border border-slate-700"
+                :style="{ backgroundColor: data.colorHex }"
+              ></div>
               <span>{{ data.colorHex }}</span>
             </div>
           </template>
@@ -93,9 +94,6 @@ const {
     </div>
 
     <!-- Modals -->
-    <FactionFormModal
-      v-model:visible="isFormModalOpen"
-      :faction="selectedFaction"
-    />
+    <FactionFormModal v-model:visible="isFormModalOpen" :faction="selectedFaction" />
   </div>
 </template>

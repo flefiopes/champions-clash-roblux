@@ -35,22 +35,26 @@ export async function loginOrCreate(robloxUserId: number, username: string): Pro
   const db = getDatabase();
 
   const existing = await db
-    .select({ id: players.id })
+    .select({
+      id: players.id,
+      lastSeen: players.lastSeen,
+      loginStreak: players.loginStreak,
+      avgSessionHour: players.avgSessionHour,
+    })
     .from(players)
     .where(eq(players.robloxUserId, robloxUserId))
     .limit(1);
 
   if (existing.length > 0) {
-    const player = (
-      await db
-        .select({ id: players.id, lastSeen: players.lastSeen, loginStreak: players.loginStreak })
-        .from(players)
-        .where(eq(players.robloxUserId, robloxUserId))
-        .limit(1)
-    )[0]!;
-
+    const player = existing[0]!;
     const now = new Date();
-    const lastSeen = player.lastSeen || new Date(0); // Fallback for very old players or nulls
+    const lastSeen = player.lastSeen || new Date(0);
+    const currentHour = now.getHours();
+
+    // Weighted average for session hour (simplified to 7-day window)
+    const oldAvg = player.avgSessionHour ?? currentHour;
+    const newAvg = Math.round((oldAvg * 6 + currentHour) / 7);
+
     let newStreak = player.loginStreak;
 
     // Daily streak logic
@@ -59,17 +63,19 @@ export async function loginOrCreate(robloxUserId: number, username: string): Pro
     const diffDays = Math.floor(diffMs / msInDay);
 
     if (diffDays === 1) {
-      // Logged in yesterday -> increment streak
       newStreak += 1;
     } else if (diffDays > 1) {
-      // Missed at least one day -> reset streak
       newStreak = 1;
     }
-    // If diffDays === 0 (same day), keep current streak
 
     await db
       .update(players)
-      .set({ username, lastSeen: now, loginStreak: newStreak })
+      .set({
+        username,
+        lastSeen: now,
+        loginStreak: newStreak,
+        avgSessionHour: newAvg,
+      })
       .where(eq(players.robloxUserId, robloxUserId));
 
     logger.debug(
@@ -175,6 +181,12 @@ export async function getProfile(robloxUserId: number): Promise<PlayerProfile> {
     nextLevelXp,
     loginStreak: player.loginStreak,
     lastSeen: player.lastSeen,
+    forceLevel: player.forceLevel,
+    speedLevel: player.speedLevel,
+    luckLevel: player.luckLevel,
+    prestigeLevel: player.prestigeLevel,
+    avgSessionHour: player.avgSessionHour,
+    idleLastCollectedAt: player.idleLastCollectedAt,
     createdAt: player.createdAt,
     factions: factionList,
   };
@@ -188,9 +200,10 @@ export async function getProfile(robloxUserId: number): Promise<PlayerProfile> {
  * @param robloxUserId - Roblox userId
  * @returns Daily limits object with used/max for each action type
  */
-export function getDailyLimits(
-  robloxUserId: number
-): { quiz: { used: number; max: number }; idleCollect: { used: number; max: number } } {
+export function getDailyLimits(robloxUserId: number): {
+  quiz: { used: number; max: number };
+  idleCollect: { used: number; max: number };
+} {
   // Placeholder: Phase 2 will add actual Redis counters per player per day.
   // For now, return maximum allowed values so Roblox clients are unblocked.
   logger.debug({ robloxUserId }, 'getDailyLimits called (using defaults until Phase 2)');

@@ -55,6 +55,16 @@ const router = createRouter({
           name: 'minigame-logs',
           component: () => import('@/views/MinigameLogsView.vue'),
         },
+        {
+          path: 'quests',
+          name: 'quests',
+          component: () => import('@/views/QuestsView.vue'),
+        },
+        {
+          path: 'badges',
+          name: 'badges',
+          component: () => import('@/views/BadgesView.vue'),
+        },
       ],
     },
     {

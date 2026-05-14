@@ -50,6 +50,24 @@ export const players = mysqlTable('players', {
   /** Timestamp of last successful login — used for streak calculation */
   lastSeen: timestamp('last_seen'),
 
+  /** Character upgrade: Force level (impacts mini-game performance) */
+  forceLevel: int('force_level').notNull().default(0),
+
+  /** Character upgrade: Speed level (impacts mini-game performance) */
+  speedLevel: int('speed_level').notNull().default(0),
+
+  /** Character upgrade: Luck level (impacts idle gains and rewards) */
+  luckLevel: int('luck_level').notNull().default(0),
+
+  /** Prestige level — resets rank for permanent bonuses */
+  prestigeLevel: int('prestige_level').notNull().default(0),
+
+  /** Average hour of the day (0-23) the player usually connects */
+  avgSessionHour: int('avg_session_hour'),
+
+  /** Last time the player collected their idle coin production */
+  idleLastCollectedAt: timestamp('idle_last_collected_at'),
+
   /** Account creation timestamp */
   createdAt: timestamp('created_at').notNull().defaultNow(),
 

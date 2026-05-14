@@ -32,7 +32,7 @@ const form = ref({
 // Options for Dropdown
 const warOptions = computed(() => {
   if (!warsQuery.data.value) return [];
-  return warsQuery.data.value.map(w => ({ label: w.name, value: w.id }));
+  return warsQuery.data.value.map((w) => ({ label: w.name, value: w.id }));
 });
 
 watch(
@@ -76,9 +76,9 @@ const isValid = computed(() => {
 
 const save = async () => {
   if (!isValid.value) return;
-  
+
   isSubmitting.value = true;
-  
+
   try {
     if (props.faction) {
       // Edit - war_id cannot be changed according to backend schema UpdateFactionSchema
@@ -118,12 +118,11 @@ const save = async () => {
       root: { class: 'bg-slate-900 border border-slate-800' },
       header: { class: 'bg-slate-900 border-b border-slate-800 text-white' },
       content: { class: 'bg-slate-900 pt-6' },
-      footer: { class: 'bg-slate-900 border-t border-slate-800' }
+      footer: { class: 'bg-slate-900 border-t border-slate-800' },
     }"
     @update:visible="emit('update:visible', $event)"
   >
     <div class="flex flex-col gap-6">
-      
       <!-- War Selection (Only visible during creation) -->
       <div v-if="!faction" class="flex flex-col gap-2">
         <label for="war_id" class="text-sm font-medium text-slate-300">Guerre associée</label>
@@ -139,7 +138,7 @@ const save = async () => {
             root: { class: '!bg-slate-950 !border-slate-800' },
             input: { class: '!text-white' },
             panel: { class: '!bg-slate-900 !border-slate-800' },
-            item: { class: '!text-slate-300 hover:!bg-slate-800' }
+            item: { class: '!text-slate-300 hover:!bg-slate-800' },
           }"
         />
       </div>
@@ -156,7 +155,9 @@ const save = async () => {
       </div>
 
       <div class="flex flex-col gap-2">
-        <label for="slogan" class="text-sm font-medium text-slate-300">Slogan (Cri de guerre)</label>
+        <label for="slogan" class="text-sm font-medium text-slate-300"
+          >Slogan (Cri de guerre)</label
+        >
         <InputText
           id="slogan"
           v-model="form.slogan"
@@ -176,16 +177,22 @@ const save = async () => {
             class="!bg-slate-950 !border-slate-800 !text-white flex-1"
             placeholder="#DC143C"
           />
-          <div 
+          <div
             class="h-10 w-10 rounded-md border border-slate-700 shadow-inner flex-shrink-0"
-            :style="{ backgroundColor: isValidHex(form.color_hex) ? form.color_hex : 'transparent' }"
+            :style="{
+              backgroundColor: isValidHex(form.color_hex) ? form.color_hex : 'transparent',
+            }"
           ></div>
         </div>
-        <small v-if="!isValidHex(form.color_hex)" class="text-red-400">Format invalide. Exemple: #DC143C</small>
+        <small v-if="!isValidHex(form.color_hex)" class="text-red-400"
+          >Format invalide. Exemple: #DC143C</small
+        >
       </div>
 
       <div v-if="faction" class="flex flex-col gap-2">
-        <label for="total_points" class="text-sm font-medium text-slate-300">Points de la faction</label>
+        <label for="total_points" class="text-sm font-medium text-slate-300"
+          >Points de la faction</label
+        >
         <InputNumber
           id="total_points"
           v-model="form.total_points"
@@ -193,12 +200,11 @@ const save = async () => {
           :min="0"
           :pt="{
             root: { class: '!bg-slate-950 !border-slate-800' },
-            input: { class: '!text-white' }
+            input: { class: '!text-white' },
           }"
         />
         <small class="text-slate-500">Modifier le score en temps réel pour cette faction.</small>
       </div>
-
     </div>
 
     <template #footer>

@@ -24,7 +24,7 @@ const close = () => {
 
 const confirmFinish = async () => {
   if (!props.war) return;
-  
+
   isSubmitting.value = true;
   try {
     await finishWar.mutateAsync(props.war.id);
@@ -47,7 +47,7 @@ const confirmFinish = async () => {
       root: { class: 'bg-slate-900 border border-slate-800' },
       header: { class: 'bg-slate-900 border-b border-slate-800 text-white' },
       content: { class: 'bg-slate-900 pt-6' },
-      footer: { class: 'bg-slate-900 border-t border-slate-800' }
+      footer: { class: 'bg-slate-900 border-t border-slate-800' },
     }"
     @update:visible="emit('update:visible', $event)"
   >
@@ -58,9 +58,9 @@ const confirmFinish = async () => {
       <div>
         <h3 class="text-base font-medium text-white">Êtes-vous sûr ?</h3>
         <p class="mt-2 text-sm text-slate-400">
-          Vous êtes sur le point de terminer la guerre 
-          <span class="font-bold text-white">{{ war?.name }}</span>. 
-          Cette action va archiver les scores et n'est pas réversible.
+          Vous êtes sur le point de terminer la guerre
+          <span class="font-bold text-white">{{ war?.name }}</span
+          >. Cette action va archiver les scores et n'est pas réversible.
         </p>
       </div>
     </div>

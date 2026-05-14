@@ -7,7 +7,7 @@ import ProgressSpinner from 'primevue/progressspinner';
 
 // const selectedMinigame = ref<string>('');
 
-// We'll filter by source in a future update if we want dropdown filtering, 
+// We'll filter by source in a future update if we want dropdown filtering,
 // for now we show all 'minigame_%' sources if the backend supported LIKE (but it supports exact match now).
 // Actually, I'll filter specifically for minigame related transactions if possible.
 const { transactionsQuery } = useAdminTransactions(200, { type: 'coin_gain' }); // We'll filter minigames inbody for now or add LIKE in backend
@@ -35,7 +35,9 @@ const { transactionsQuery } = useAdminTransactions(200, { type: 'coin_gain' }); 
 
     <div v-else class="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden shadow-sm">
       <DataTable
-        :value="transactionsQuery.data.value?.data.filter(t => t.source.startsWith('minigame_')) || []"
+        :value="
+          transactionsQuery.data.value?.data.filter((t) => t.source.startsWith('minigame_')) || []
+        "
         paginator
         :rows="15"
         data-key="id"
@@ -51,13 +53,13 @@ const { transactionsQuery } = useAdminTransactions(200, { type: 'coin_gain' }); 
             {{ new Date(data.createdAt).toLocaleString('fr-FR') }}
           </template>
         </Column>
-        
+
         <Column field="username" header="Joueur" sortable>
           <template #body="{ data }">
-             <div class="flex flex-col">
-               <span class="font-medium text-white">{{ data.username || 'Inconnu' }}</span>
-               <span class="text-xs text-slate-500">{{ data.playerId }}</span>
-             </div>
+            <div class="flex flex-col">
+              <span class="font-medium text-white">{{ data.username || 'Inconnu' }}</span>
+              <span class="text-xs text-slate-500">{{ data.playerId }}</span>
+            </div>
           </template>
         </Column>
 
@@ -69,7 +71,11 @@ const { transactionsQuery } = useAdminTransactions(200, { type: 'coin_gain' }); 
 
         <Column field="meta.rank" header="Rang" sortable>
           <template #body="{ data }">
-            <span v-if="data.meta?.rank" class="font-bold" :class="data.meta.rank <= 3 ? 'text-yellow-400' : 'text-slate-300'">
+            <span
+              v-if="data.meta?.rank"
+              class="font-bold"
+              :class="data.meta.rank <= 3 ? 'text-yellow-400' : 'text-slate-300'"
+            >
               #{{ data.meta.rank }}
             </span>
             <span v-else class="text-slate-500">-</span>

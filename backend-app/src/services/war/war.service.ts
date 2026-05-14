@@ -13,6 +13,7 @@ import { wars, factions, players, playerFactions, warWeeklyResults } from '@/db/
 import { createChildLogger } from '@/lib/logger';
 import { AppError, AppErrorCode } from '@/lib/app-error';
 import type { ActiveWar, FactionScore, WarLeaderboard, LeaderboardEntry } from '@/types';
+import { getGameConfig } from '@/services/admin/admin-config.service';
 
 /** War service logger */
 const logger = createChildLogger({ module: 'war-service' });
@@ -28,6 +29,7 @@ const FACTION_LOCK_MS = 7 * 24 * 60 * 60 * 1000;
  */
 export async function getActiveWars(): Promise<ActiveWar[]> {
   const db = getDatabase();
+  const config = await getGameConfig();
 
   const warRows = await db.select().from(wars).where(eq(wars.status, 'active'));
 
@@ -72,18 +74,40 @@ export async function getActiveWars(): Promise<ActiveWar[]> {
       slogan: f.slogan,
       totalPoints: f.totalPoints,
       memberCount: f.memberCount,
+      dynamicMultiplier: 1.0,
+      isBotAssisted: false,
     });
   }
 
-  return warRows.map((war) => ({
-    id: war.id,
-    name: war.name,
-    status: war.status,
-    resetWeekly: war.resetWeekly,
-    lastResetAt: war.lastResetAt,
-    endsAt: war.endsAt,
-    factions: factionsByWar.get(war.id) ?? [],
-  }));
+  // Calculate dynamic balancing (Rubber Banding)
+  return warRows.map((war) => {
+    const warFactions = factionsByWar.get(war.id) ?? [];
+    const totalWarPoints = warFactions.reduce((acc, f) => acc + f.totalPoints, 0);
+
+    const enrichedFactions = warFactions.map((f) => {
+      // If a faction has < 80% of the average points, give it a boost
+      const avgPoints = totalWarPoints / warFactions.length;
+      const isTrailing = totalWarPoints > 0 && f.totalPoints < avgPoints * 0.8;
+
+      return {
+        ...f,
+        // Dynamic multiplier: 1.0 base, from config if trailing significantly
+        dynamicMultiplier: isTrailing ? (config.rubberBandMultiplier as number) || 1.5 : 1.0,
+        // Bot assistance flag for Roblox client to spawn support NPCs
+        isBotAssisted: isTrailing,
+      };
+    });
+
+    return {
+      id: war.id,
+      name: war.name,
+      status: war.status,
+      resetWeekly: war.resetWeekly,
+      lastResetAt: war.lastResetAt,
+      endsAt: war.endsAt,
+      factions: enrichedFactions,
+    };
+  });
 }
 
 /**

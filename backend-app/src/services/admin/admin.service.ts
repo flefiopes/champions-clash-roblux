@@ -9,7 +9,7 @@
 import { eq, and, desc, gte, lte, sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { getDatabase } from '@/db';
-import { wars, factions, transactions, players } from '@/db/schema';
+import { wars, factions, transactions, players, playerQuests } from '@/db/schema';
 import { createChildLogger } from '@/lib/logger';
 import { AppError, AppErrorCode } from '@/lib/app-error';
 import type {
@@ -34,11 +34,26 @@ export async function getDashboardStats(): Promise<Record<string, number>> {
     totalWarsCount,
     activeWarsCount,
     totalFactionsCount,
+    dailyActiveCount,
+    avgPrestigeResult,
+    activeQuestsCount,
   ] = await Promise.all([
     db.select({ count: sql<number>`COUNT(*)` }).from(players),
     db.select({ count: sql<number>`COUNT(*)` }).from(wars),
-    db.select({ count: sql<number>`COUNT(*)` }).from(wars).where(eq(wars.status, 'active')),
+    db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(wars)
+      .where(eq(wars.status, 'active')),
     db.select({ count: sql<number>`COUNT(*)` }).from(factions),
+    db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(players)
+      .where(sql`${players.lastSeen} >= NOW() - INTERVAL 1 DAY`),
+    db.select({ avg: sql<number>`AVG(${players.prestigeLevel})` }).from(players),
+    db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(playerQuests)
+      .where(eq(playerQuests.status, 'active')),
   ]);
 
   return {
@@ -46,7 +61,51 @@ export async function getDashboardStats(): Promise<Record<string, number>> {
     totalWars: totalWarsCount[0]?.count ?? 0,
     activeWars: activeWarsCount[0]?.count ?? 0,
     totalFactions: totalFactionsCount[0]?.count ?? 0,
+    dailyActiveUsers: dailyActiveCount[0]?.count ?? 0,
+    avgPrestige: Math.round((avgPrestigeResult[0]?.avg ?? 0) * 10) / 10,
+    activeQuests: activeQuestsCount[0]?.count ?? 0,
   };
+}
+
+/**
+ * Returns recent activity for dashboard monitoring.
+ * Includes recent quest completions and high-value transactions.
+ *
+ * @param limit - Maximum number of items to return
+ * @returns Object containing recent quest completions and transactions
+ */
+export async function getRecentActivity(limit = 10) {
+  const db = getDatabase();
+
+  const [recentQuests, recentTransactions] = await Promise.all([
+    db
+      .select({
+        id: playerQuests.questId,
+        playerId: playerQuests.playerId,
+        pseudo: players.username,
+        completedAt: playerQuests.updatedAt,
+      })
+      .from(playerQuests)
+      .innerJoin(players, eq(playerQuests.playerId, players.id))
+      .where(eq(playerQuests.status, 'claimed'))
+      .orderBy(desc(playerQuests.updatedAt))
+      .limit(limit),
+
+    db
+      .select({
+        id: transactions.id,
+        pseudo: players.username,
+        type: transactions.type,
+        amount: transactions.amount,
+        createdAt: transactions.createdAt,
+      })
+      .from(transactions)
+      .innerJoin(players, eq(transactions.playerId, players.id))
+      .orderBy(desc(transactions.createdAt))
+      .limit(limit),
+  ]);
+
+  return { recentQuests, recentTransactions };
 }
 
 /**
@@ -55,7 +114,9 @@ export async function getDashboardStats(): Promise<Record<string, number>> {
  *
  * @returns List of mini-game stats
  */
-export async function getMinigameStats(): Promise<Array<{ minigameId: string; totalRuns: number; totalCoins: number }>> {
+export async function getMinigameStats(): Promise<
+  Array<{ minigameId: string; totalRuns: number; totalCoins: number }>
+> {
   const db = getDatabase();
 
   const stats = await db

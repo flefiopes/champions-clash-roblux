@@ -35,7 +35,7 @@ watch(
     if (newVal !== localValue.value) {
       localValue.value = newVal;
     }
-  },
+  }
 );
 
 function handleInput() {
@@ -53,9 +53,7 @@ onUnmounted(() => {
 
 <template>
   <div class="relative w-full sm:w-80">
-    <span
-      class="absolute inset-y-0 left-3.5 flex items-center z-10 pointer-events-none"
-    >
+    <span class="absolute inset-y-0 left-3.5 flex items-center z-10 pointer-events-none">
       <SearchIcon class="h-4 w-4 text-slate-400" />
     </span>
     <InputText

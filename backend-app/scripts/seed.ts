@@ -12,7 +12,9 @@ import {
   wars, 
   factions, 
   players, 
-  playerFactions 
+  playerFactions,
+  badges,
+  quests
 } from '@/db/schema';
 
 const logger = getLogger();
@@ -157,6 +159,97 @@ async function runSeed() {
       weeklyPoints: 500,
       alltimePoints: 1000,
     }).onDuplicateKeyUpdate({ set: { weeklyPoints: 500 } });
+  }
+
+  console.log('Seeding rewards definitions...');
+
+  // 1. Seed Badges
+  const badgeData = [
+    {
+      id: randomUUID(),
+      slug: 'first-login',
+      name: 'Pionnier',
+      description: 'Bienvenue dans Champions Clash 2027 !',
+      imageUrl: 'https://cdn-icons-png.flaticon.com/512/5968/5968923.png',
+      rarity: 'common' as const,
+      isPermanent: true,
+    },
+    {
+      id: randomUUID(),
+      slug: 'war-veteran',
+      name: 'Vétéran de Guerre',
+      description: 'A participé à plus de 10 guerres de factions.',
+      imageUrl: 'https://cdn-icons-png.flaticon.com/512/2583/2583344.png',
+      rarity: 'rare' as const,
+      isPermanent: true,
+    },
+    {
+      id: randomUUID(),
+      slug: 'wealthy',
+      name: 'Magnat',
+      description: 'A accumulé plus de 100,000 pièces.',
+      imageUrl: 'https://cdn-icons-png.flaticon.com/512/3135/3135706.png',
+      rarity: 'epic' as const,
+      isPermanent: true,
+    },
+  ];
+
+  for (const b of badgeData) {
+    await db
+      .insert(badges)
+      .values(b)
+      .onDuplicateKeyUpdate({ set: { name: b.name } });
+  }
+
+  // 2. Seed Quests
+  const questData = [
+    {
+      id: randomUUID(),
+      type: 'daily' as const,
+      title: 'Chasseur de Pièces',
+      description: 'Gagnez 500 pièces dans n\'importe quel mini-jeu.',
+      requirementType: 'coins_earned',
+      requirementValue: 500,
+      rewardCoins: 100,
+      rewardXp: 50,
+    },
+    {
+      id: randomUUID(),
+      type: 'daily' as const,
+      title: 'Compétiteur Né',
+      description: 'Jouez à 3 mini-jeux aujourd\'hui.',
+      requirementType: 'games_played',
+      requirementValue: 3,
+      rewardCoins: 150,
+      rewardXp: 75,
+    },
+    {
+      id: randomUUID(),
+      type: 'recruit' as const,
+      title: 'Premier Pas',
+      description: 'Rejoignez votre première faction.',
+      requirementType: 'faction_join',
+      requirementValue: 1,
+      rewardCoins: 500,
+      rewardXp: 250,
+    },
+    {
+      id: randomUUID(),
+      type: 'daily' as const,
+      title: 'Mécène de Faction',
+      description: 'Contribuez 1,000 points à votre faction.',
+      requirementType: 'points_contributed',
+      requirementValue: 1000,
+      rewardCoins: 200,
+      rewardXp: 100,
+    },
+  ];
+
+  for (const q of questData) {
+    await db
+      .insert(quests)
+      .values(q)
+      .onDuplicateKeyUpdate({ set: { title: q.title } });
   }
 
   logger.info('Database seed completed successfully.');

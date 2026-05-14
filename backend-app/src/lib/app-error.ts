@@ -17,6 +17,7 @@ export enum AppErrorCode {
   // Validation errors (400)
   VALIDATION_ERROR = 'VALIDATION_ERROR',
   INVALID_REQUEST = 'INVALID_REQUEST',
+  INVALID_ACTION = 'INVALID_ACTION',
 
   // Resource errors (404/409)
   NOT_FOUND = 'NOT_FOUND',

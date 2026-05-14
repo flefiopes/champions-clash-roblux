@@ -10,6 +10,7 @@ import { createChildLogger } from '@/lib/logger';
 import { getPublicConfig } from '@/services/config/config.service';
 import * as economyService from '@/services/economy/economy.service';
 import * as playerService from '@/services/player/player.service';
+import { updateQuestProgress } from '@/services/quest/quest.service';
 import { AppError, AppErrorCode } from '@/lib/app-error';
 
 /** Mini-game service logger */
@@ -51,9 +52,13 @@ export async function processResult(
   if (!gameConfig) {
     throw new AppError(AppErrorCode.VALIDATION_ERROR, `Mini-game '${minigameId}' not found`, 404);
   }
-  
+
   if (!gameConfig.enabled) {
-    throw new AppError(AppErrorCode.VALIDATION_ERROR, `Mini-game '${minigameId}' is currently disabled`, 400);
+    throw new AppError(
+      AppErrorCode.VALIDATION_ERROR,
+      `Mini-game '${minigameId}' is currently disabled`,
+      400
+    );
   }
 
   // Resolve player
@@ -81,13 +86,22 @@ export async function processResult(
   const xpAwarded = Math.floor(coinsAwarded * 0.5); // Standard: 1 Coin = 0.5 XP
 
   // Grant rewards
-  const newCoinBalance = await economyService.addCoins(playerId, coinsAwarded, `minigame_${minigameId}`, {
-    rank,
-    score,
-    minigameId,
-  });
-  
+  const newCoinBalance = await economyService.addCoins(
+    playerId,
+    coinsAwarded,
+    `minigame_${minigameId}`,
+    {
+      rank,
+      score,
+      minigameId,
+    }
+  );
+
   await economyService.addXp(playerId, xpAwarded, `minigame_${minigameId}`);
+
+  // Track quest progress
+  await updateQuestProgress(playerId, 'coins_earned', coinsAwarded);
+  await updateQuestProgress(playerId, 'games_played', 1);
 
   logger.info(
     { robloxUserId, minigameId, rank, score, coinsAwarded, xpAwarded },

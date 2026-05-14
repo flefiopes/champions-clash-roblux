@@ -122,7 +122,10 @@ export async function createProduct(data: CreateProductInput): Promise<string> {
     isActive: data.is_active ?? true,
   });
 
-  logger.info({ productId: id, name: data.name, robloxProductId: data.roblox_product_id }, 'Product created');
+  logger.info(
+    { productId: id, name: data.name, robloxProductId: data.roblox_product_id },
+    'Product created'
+  );
   return id;
 }
 

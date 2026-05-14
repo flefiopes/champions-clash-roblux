@@ -25,7 +25,9 @@ export type TransactionType =
   | 'gem_gain'
   | 'gem_spend'
   | 'point_contribution'
-  | 'xp_gain';
+  | 'xp_gain'
+  | 'upgrade_buy'
+  | 'idle_collect';
 
 /** Purchasable product categories */
 export type ProductType = 'gems' | 'boost' | 'cosmetic' | 'faction_reset';
@@ -45,6 +47,12 @@ export interface PlayerProfile {
   nextLevelXp: number;
   loginStreak: number;
   lastSeen: Date | null;
+  forceLevel: number;
+  speedLevel: number;
+  luckLevel: number;
+  prestigeLevel: number;
+  avgSessionHour: number | null;
+  idleLastCollectedAt: Date | null;
   createdAt: Date;
   /** Active faction memberships across all joined wars */
   factions: PlayerFactionSummary[];
@@ -87,6 +95,8 @@ export interface FactionScore {
   slogan: string;
   totalPoints: number;
   memberCount: number;
+  dynamicMultiplier: number;
+  isBotAssisted: boolean;
 }
 
 /**
@@ -137,10 +147,13 @@ export interface DailyLimits {
  * Public game configuration snapshot polled by Roblox every 5 minutes.
  */
 export interface PublicGameConfig {
-  minigames: Record<string, {
-    enabled: boolean;
-    max_reward: number;
-  }>;
+  minigames: Record<
+    string,
+    {
+      enabled: boolean;
+      max_reward: number;
+    }
+  >;
   globalMultiplier: number;
   doublePointsWeekend: boolean;
   maxWarsPerPlayer: number;
@@ -156,9 +169,44 @@ export interface BoostProductValue {
   multiplier: number;
 }
 
-/**
- * Gem pack payload stored in products.value for type = "gems".
- */
+/** Gem pack payload stored in products.value for type = "gems". */
 export interface GemsProductValue {
   gems: number;
+}
+
+/** Quest categories */
+export type QuestType = 'daily' | 'recruit' | 'seasonal' | 'secret';
+
+/** Player-specific quest lifecycle states */
+export type QuestStatus = 'active' | 'completed' | 'claimed';
+
+/** Full player-quest progress snapshot */
+export interface PlayerQuest {
+  questId: string;
+  title: string;
+  description: string;
+  type: QuestType;
+  status: QuestStatus;
+  requirementType: string;
+  requirementValue: number;
+  currentValue: number;
+  rewardCoins: number;
+  rewardGems: number;
+  rewardXp: number;
+  rewardBadgeId: string | null;
+  assignedAt: Date;
+}
+
+/** Visual rarity tiers for collectibles */
+export type BadgeRarity = 'common' | 'rare' | 'epic' | 'legendary' | 'secret';
+
+/** Public badge definition */
+export interface Badge {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  imageUrl: string;
+  rarity: BadgeRarity;
+  isPermanent: boolean;
 }

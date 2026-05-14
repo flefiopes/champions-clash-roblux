@@ -33,7 +33,7 @@ onUnmounted(() => {
 /* Global resets */
 body {
   margin: 0;
-  font-family: "Inter", sans-serif;
+  font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

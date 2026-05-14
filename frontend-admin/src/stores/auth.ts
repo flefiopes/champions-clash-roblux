@@ -57,4 +57,3 @@ export const useAuthStore = defineStore('auth', () => {
     initAuth,
   };
 });
-

@@ -58,7 +58,13 @@ export const FactionJoinSchema = z.object({
   war_id: z.string().uuid(),
 });
 
+export const UpgradeAttributeSchema = z.object({
+  /** Attribute to upgrade */
+  attribute: z.enum(['force', 'speed', 'luck']),
+});
+
 export type PlayerLoginInput = z.infer<typeof PlayerLoginSchema>;
 export type CoinTransactionInput = z.infer<typeof CoinTransactionSchema>;
 export type PointContributionInput = z.infer<typeof PointContributionSchema>;
 export type FactionJoinInput = z.infer<typeof FactionJoinSchema>;
+export type UpgradeAttributeInput = z.infer<typeof UpgradeAttributeSchema>;

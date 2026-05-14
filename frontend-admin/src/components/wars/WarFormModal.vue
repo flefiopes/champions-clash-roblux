@@ -53,9 +53,9 @@ const close = () => {
 
 const save = async () => {
   if (!form.value.name.trim()) return;
-  
+
   isSubmitting.value = true;
-  
+
   try {
     if (props.war) {
       // Edit
@@ -93,7 +93,7 @@ const save = async () => {
       root: { class: 'bg-slate-900 border border-slate-800' },
       header: { class: 'bg-slate-900 border-b border-slate-800 text-white' },
       content: { class: 'bg-slate-900 pt-6' },
-      footer: { class: 'bg-slate-900 border-t border-slate-800' }
+      footer: { class: 'bg-slate-900 border-t border-slate-800' },
     }"
     @update:visible="emit('update:visible', $event)"
   >
@@ -110,18 +110,16 @@ const save = async () => {
       </div>
 
       <div class="flex items-center gap-2">
-        <Checkbox
-          v-model="form.reset_weekly"
-          input-id="reset_weekly"
-          binary
-        />
+        <Checkbox v-model="form.reset_weekly" input-id="reset_weekly" binary />
         <label for="reset_weekly" class="text-sm text-slate-300 cursor-pointer">
           Réinitialisation hebdomadaire des scores
         </label>
       </div>
 
       <div class="flex flex-col gap-2">
-        <label for="ends_at" class="text-sm font-medium text-slate-300">Date de fin (Optionnel)</label>
+        <label for="ends_at" class="text-sm font-medium text-slate-300"
+          >Date de fin (Optionnel)</label
+        >
         <Calendar
           id="ends_at"
           v-model="form.ends_at"
@@ -130,8 +128,10 @@ const save = async () => {
           date-format="dd/mm/yy"
           class="w-full"
           :pt="{
-            input: { class: '!bg-slate-950 !border-slate-800 !text-white w-full' },
-            panel: { class: 'bg-slate-900 border border-slate-800' }
+            input: {
+              class: '!bg-slate-950 !border-slate-800 !text-white w-full',
+            },
+            panel: { class: 'bg-slate-900 border border-slate-800' },
           }"
         />
         <small class="text-slate-500">Laissez vide pour une durée indéterminée.</small>

@@ -29,4 +29,9 @@ export type {
   PublicGameConfig,
   BoostProductValue,
   GemsProductValue,
+  QuestType,
+  QuestStatus,
+  PlayerQuest,
+  BadgeRarity,
+  Badge,
 } from './game.types';

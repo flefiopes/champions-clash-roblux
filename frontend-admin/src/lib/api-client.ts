@@ -39,7 +39,7 @@ function createApiInstance(): AxiosInstance {
       }
       return config;
     },
-    (error) => Promise.reject(error),
+    (error) => Promise.reject(error)
   );
 
   // Response interceptor: handle errors
@@ -52,7 +52,7 @@ function createApiInstance(): AxiosInstance {
         showErrorToast('Admin key invalid or expired. Please login again.', 'Unauthorized');
       }
       return Promise.reject(error);
-    },
+    }
   );
 
   return instance;
@@ -101,4 +101,3 @@ export async function apiRequest<T>(config: AxiosRequestConfig): Promise<T> {
     throw error;
   }
 }
-

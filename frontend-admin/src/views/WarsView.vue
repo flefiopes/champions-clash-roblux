@@ -36,10 +36,14 @@ const getSeverity = (status: string) => {
 
 const formatStatus = (status: string) => {
   switch (status) {
-    case 'active': return 'Actif';
-    case 'paused': return 'En pause';
-    case 'finished': return 'Terminé';
-    default: return status;
+    case 'active':
+      return 'Actif';
+    case 'paused':
+      return 'En pause';
+    case 'finished':
+      return 'Terminé';
+    default:
+      return status;
   }
 };
 </script>
@@ -60,7 +64,10 @@ const formatStatus = (status: string) => {
       <ProgressSpinner />
     </div>
 
-    <div v-else-if="warsQuery.isError.value" class="text-red-400 p-4 bg-red-500/10 rounded-xl border border-red-500/20">
+    <div
+      v-else-if="warsQuery.isError.value"
+      class="text-red-400 p-4 bg-red-500/10 rounded-xl border border-red-500/20"
+    >
       Une erreur est survenue lors du chargement des données.
     </div>
 
@@ -77,17 +84,8 @@ const formatStatus = (status: string) => {
           <div class="p-6 text-center text-slate-400">Aucune guerre trouvée.</div>
         </template>
 
-        <Column
-          field="id"
-          header="ID"
-          sortable
-          style="width: 25%"
-        />
-        <Column
-field="name"
-header="Nom de la Saison"
-sortable
-style="width: 25%" />
+        <Column field="id" header="ID" sortable style="width: 25%" />
+        <Column field="name" header="Nom de la Saison" sortable style="width: 25%" />
         <Column field="createdAt" header="Date de Création" sortable>
           <template #body="{ data }">
             {{ new Date(data.createdAt).toLocaleString('fr-FR') }}
@@ -131,13 +129,7 @@ style="width: 25%" />
     </div>
 
     <!-- Modals -->
-    <WarFormModal
-      v-model:visible="isFormModalOpen"
-      :war="selectedWar"
-    />
-    <WarFinishModal
-      v-model:visible="isFinishModalOpen"
-      :war="selectedWar"
-    />
+    <WarFormModal v-model:visible="isFormModalOpen" :war="selectedWar" />
+    <WarFinishModal v-model:visible="isFinishModalOpen" :war="selectedWar" />
   </div>
 </template>

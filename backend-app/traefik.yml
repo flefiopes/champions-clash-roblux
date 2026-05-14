@@ -1,0 +1,113 @@
+# =============================================================================
+# config/traefik/traefik.yml — Configuration statique Traefik v3
+# Montée en read-only dans le container Traefik.
+# Les variables d'environnement sont interpolées via la syntaxe Go template.
+# =============================================================================
+
+# --- API & Dashboard ---
+api:
+  dashboard: true
+  # Le dashboard est exposé UNIQUEMENT via un router sécurisé (labels Docker).
+  # insecure: false est la valeur par défaut — jamais activé en production.
+  insecure: false
+
+# --- Logs ---
+log:
+  level: INFO          # DEBUG | INFO | WARN | ERROR
+  format: json         # json pour parsing Prometheus/Loki
+
+accessLog:
+  format: json
+  bufferingSize: 100   # Buffer avant écriture disque
+  filters:
+    statusCodes:
+      - "400-599"      # Log uniquement les erreurs (évite le bruit des 200)
+    retryAttempts: true
+    minDuration: "100ms"
+
+# --- Points d'entrée ---
+entryPoints:
+  # Port 80 : uniquement pour la redirection HTTPS et le challenge ACME HTTP-01
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true  # 301 Permanent Redirect
+
+  # Port 443 : HTTPS avec TLS Let's Encrypt par défaut
+  websecure:
+    address: ":443"
+    http:
+      tls:
+        certResolver: letsencrypt
+        # Domaines wildcard optionnels (nécessite un DNS challenge)
+        # domains:
+        #   - main: "{{ env "DOMAIN" }}"
+        #     sans:
+        #       - "*.{{ env "DOMAIN" }}"
+    # HTTP/3 (QUIC) — améliore les performances réseau
+    http3:
+      advertisedPort: 443
+
+  # Port interne pour les métriques Prometheus (non exposé à l'extérieur)
+  metrics:
+    address: ":8082"
+
+# --- Résolveur de certificats Let's Encrypt ---
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: "{{ env "ACME_EMAIL" }}"
+      storage: /letsencrypt/acme.json
+      # Challenge HTTP-01 : Let's Encrypt appelle /.well-known/acme-challenge/ sur le port 80
+      # Simple, universel, ne nécessite pas d'accès DNS.
+      httpChallenge:
+        entryPoint: web
+      # Pour un wildcard cert, utilise plutôt dnsChallenge :
+      # caServer: https://acme-v02.api.letsencrypt.org/directory
+      #
+      # 🧪 STAGING — Active pour tester sans consommer le rate limit Let's Encrypt
+      # Désactive en production (commente la ligne ci-dessous)
+      # caServer: https://acme-staging-v02.api.letsencrypt.org/directory
+
+# --- Provider Docker ---
+providers:
+  docker:
+    # Ne pas exposer automatiquement tous les containers — opt-in via label
+    exposedByDefault: false
+    # Réseau Docker sur lequel Traefik cherche les containers
+    network: traefik-public
+    # Écoute les événements Docker en temps réel
+    watch: true
+
+  # Provider fichier pour des règles statiques supplémentaires (optionnel)
+  # file:
+  #   directory: /config/dynamic
+  #   watch: true
+
+# --- Métriques Prometheus ---
+metrics:
+  prometheus:
+    entryPoint: metrics          # Exposé sur le port interne 8082 uniquement
+    buckets:
+      - 0.05
+      - 0.1
+      - 0.3
+      - 0.5
+      - 1.0
+      - 2.5
+      - 5.0
+      - 10.0
+    addEntryPointsLabels: true   # Labels par entrypoint dans les métriques
+    addServicesLabels: true      # Labels par service backend
+    addRoutersLabels: true       # Labels par router
+
+# --- Tracing (optionnel, décommente si tu ajoutes Jaeger/Tempo) ---
+# tracing:
+#   otlp:
+#     grpc:
+#       endpoint: "http://tempo:4317"
+#       insecure: true

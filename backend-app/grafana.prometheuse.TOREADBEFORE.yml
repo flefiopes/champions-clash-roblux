@@ -1,0 +1,21 @@
+# =============================================================================
+# config/grafana/provisioning/datasources/prometheus.yml
+# Grafana charge automatiquement cette datasource au démarrage.
+# Aucune configuration manuelle nécessaire dans l'UI.
+# =============================================================================
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    uid: prometheus-main
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false   # Empêche la modification accidentelle depuis l'UI
+    jsonData:
+      timeInterval: "15s"
+      httpMethod: POST
+      prometheusType: Prometheus
+      prometheusVersion: "3.0.0"

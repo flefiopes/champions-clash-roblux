@@ -1,6 +1,53 @@
-node_modules
-.git
+# --- Dépendances (reconstruites dans le container) ---
+node_modules/
+bun.lockb
+
+# --- VCS ---
+.git/
 .gitignore
-.vscode
+.gitattributes
+
+# --- IDE & OS ---
+.vscode/
+.idea/
+*.DS_Store
+Thumbs.db
+
+# --- Fichiers d'environnement (ne JAMAIS inclure dans l'image) ---
+.env
+.env.*
+!.env.example
+
+# --- Logs locaux ---
+logs/
+*.log
+
+# --- Artefacts de build ---
+dist/
+build/
+out/
+
+# --- Drizzle (migrations générées localement, pas nécessaires dans l'image) ---
+drizzle/
+
+# --- Tests & CI ---
+tests/
+*.test.ts
+*.spec.ts
+coverage/
+.nyc_output/
+
+# --- Documentation ---
 *.md
-dist
+docs/
+
+# --- Docker (évite la récursion) ---
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# --- Outils de qualité de code ---
+.eslintrc*
+.eslintignore
+.prettierrc*
+.editorconfig

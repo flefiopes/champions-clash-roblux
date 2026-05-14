@@ -53,8 +53,8 @@ const getGameStats = (gameId: string) => {
       <Button 
         label="Ajouter un Mini-jeu" 
         icon="pi pi-plus" 
-        @click="isAddModalOpen = true"
         class="p-button-sm !bg-indigo-600 !border-indigo-600"
+        @click="isAddModalOpen = true"
       />
     </div>
 
@@ -84,10 +84,10 @@ const getGameStats = (gameId: string) => {
           <span class="text-xs text-slate-500 uppercase font-bold tracking-wider">Limite Points:</span>
           <InputNumber 
             :model-value="settings.max_reward" 
-            @update:model-value="(val) => updateMaxReward(gameId, settings, val || 0)"
             class="w-20 p-inputtext-sm"
             :min="0"
             :max="10000"
+            @update:model-value="(val) => updateMaxReward(gameId, settings, val || 0)"
           />
         </div>
 
@@ -119,19 +119,35 @@ const getGameStats = (gameId: string) => {
     </div>
 
     <!-- Modal d'ajout -->
-    <Dialog v-model:visible="isAddModalOpen" modal header="Nouveau Mini-jeu" :style="{ width: '350px' }">
+    <Dialog
+v-model:visible="isAddModalOpen"
+modal
+header="Nouveau Mini-jeu"
+:style="{ width: '350px' }">
       <div class="space-y-4 pt-4">
         <div class="flex flex-col gap-2">
           <label for="game-id" class="text-sm font-medium text-slate-300">Identifiant (Roblox)</label>
-          <InputText id="game-id" v-model="newGame.id" placeholder="ex: race, combat..." class="w-full" />
+          <InputText
+id="game-id"
+v-model="newGame.id"
+placeholder="ex: race, combat..."
+class="w-full" />
         </div>
         <div class="flex flex-col gap-2">
           <label for="max-reward" class="text-sm font-medium text-slate-300">Points Max (Anti-Cheat)</label>
-          <InputNumber id="max-reward" v-model="newGame.max_reward" class="w-full" :min="10" />
+          <InputNumber
+id="max-reward"
+v-model="newGame.max_reward"
+class="w-full"
+:min="10" />
         </div>
         <div class="flex justify-end gap-3 mt-6">
           <Button label="Annuler" class="p-button-text !text-slate-400" @click="isAddModalOpen = false" />
-          <Button label="Créer" class="!bg-indigo-600 !border-indigo-600" @click="addMinigame" :disabled="!newGame.id" />
+          <Button
+label="Créer"
+class="!bg-indigo-600 !border-indigo-600"
+:disabled="!newGame.id"
+@click="addMinigame" />
         </div>
       </div>
     </Dialog>

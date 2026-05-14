@@ -72,7 +72,7 @@ export async function getPublicConfig(): Promise<PublicGameConfig> {
     minigames: {
       ...DEFAULT_CONFIG.minigames,
       ...(typeof dbConfig.minigames === 'object' && dbConfig.minigames !== null
-        ? (dbConfig.minigames as Record<string, any>)
+        ? (dbConfig.minigames as PublicGameConfig['minigames'])
         : {}),
     },
     globalMultiplier:

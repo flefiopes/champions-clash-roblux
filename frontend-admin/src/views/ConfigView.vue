@@ -13,7 +13,6 @@ const form = ref({
   enablePurchases: true,
   enablePointContributions: true,
   maxLevel: 100,
-  minigames: {} as Record<string, { enabled: boolean; max_reward: number }>,
 });
 
 // Sync form with loaded data
@@ -23,7 +22,6 @@ watch(() => configQuery.data.value, (newData) => {
     form.value.enablePurchases = newData.enablePurchases;
     form.value.enablePointContributions = newData.enablePointContributions;
     form.value.maxLevel = newData.maxLevel;
-    form.value.minigames = { ...newData.minigames };
   }
 }, { immediate: true });
 
@@ -77,32 +75,7 @@ class="w-full sm:w-64 !bg-slate-950 !border-slate-800 !text-white" />
           </div>
         </div>
 
-        <!-- Mini-games Section -->
-        <div class="pt-6 border-t border-slate-800 space-y-4">
-          <h2 class="text-lg font-semibold text-white flex items-center gap-2">
-            <i class="pi pi-th-large text-indigo-400"></i>
-            Mini-jeux Actifs
-          </h2>
-          <p class="text-sm text-slate-500">Activez ou désactivez les mini-jeux disponibles sur les serveurs Roblox en temps réel.</p>
-          
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div v-for="(_, gameId) in form.minigames" :key="gameId" class="flex items-center gap-3 p-3 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors">
-              <template v-if="form.minigames[gameId]">
-                <Checkbox v-model="form.minigames[gameId].enabled" :input-id="'game-' + gameId" binary />
-                <label :for="'game-' + gameId" class="text-slate-300 capitalize cursor-pointer flex-1">
-                  {{ gameId }}
-                </label>
-                <div :class="[form.minigames[gameId].enabled ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-500']" class="text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">
-                  {{ form.minigames[gameId].enabled ? 'ON' : 'OFF' }}
-                </div>
-              </template>
-            </div>
-          </div>
-          
-          <div v-if="Object.keys(form.minigames).length === 0" class="text-center p-6 bg-slate-950/50 rounded-xl border border-dashed border-slate-800 text-slate-500">
-            Aucun mini-jeu configuré dans la base de données.
-          </div>
-        </div>
+
 
         <div class="pt-4 border-t border-slate-800">
           <Button

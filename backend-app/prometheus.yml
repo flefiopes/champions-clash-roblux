@@ -1,0 +1,86 @@
+# =============================================================================
+# config/prometheus/prometheus.yml — Configuration des scrape targets
+# Prometheus collecte les métriques de tous les composants de la stack.
+# =============================================================================
+
+global:
+  scrape_interval: 15s       # Fréquence de collecte par défaut
+  evaluation_interval: 15s   # Fréquence d'évaluation des règles d'alerte
+  scrape_timeout: 10s
+
+  # Labels ajoutés à toutes les métriques collectées par cette instance
+  external_labels:
+    environment: "production"
+    project: "champions-clash"
+
+# --- Règles d'alerte (décommente et crée le fichier si tu ajoutes Alertmanager) ---
+# rule_files:
+#   - /etc/prometheus/rules/*.yml
+
+# =============================================================================
+# Scrape configurations
+# =============================================================================
+scrape_configs:
+
+  # --- Prometheus lui-même ---
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+        labels:
+          service: "prometheus"
+
+  # --- Traefik — métriques du reverse proxy ---
+  # Port 8082 : entrypoint interne "metrics" (non exposé à l'extérieur)
+  - job_name: "traefik"
+    static_configs:
+      - targets: ["traefik:8082"]
+        labels:
+          service: "traefik"
+
+  # --- Champions Clash API ---
+  # Si ton app ElysiaJS expose un endpoint /metrics (via plugin elysia-prometheus
+  # ou manuel), décommente ce bloc. Sinon, laisse commenté.
+  # - job_name: "champions-clash-api"
+  #   static_configs:
+  #     - targets: ["api:3000"]
+  #   metrics_path: /api/v1/metrics
+  #   scheme: http
+
+  # --- Node Exporter — métriques système de l'hôte ---
+  # CPU, RAM, disque, réseau, charge système
+  - job_name: "node-exporter"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+        labels:
+          service: "node-exporter"
+          instance: "production-host"
+
+  # --- cAdvisor — métriques des containers Docker ---
+  # CPU/RAM par container, I/O réseau, limites vs usage
+  - job_name: "cadvisor"
+    static_configs:
+      - targets: ["cadvisor:8080"]
+        labels:
+          service: "cadvisor"
+    # cAdvisor peut générer beaucoup de métriques — on filtre
+    metric_relabel_configs:
+      # Garde uniquement les métriques utiles, supprime le bruit
+      - source_labels: [__name__]
+        regex: "container_(cpu_usage_seconds_total|memory_working_set_bytes|network_receive_bytes_total|network_transmit_bytes_total|fs_reads_bytes_total|fs_writes_bytes_total)|machine_.*"
+        action: keep
+
+  # --- MySQL Exporter (optionnel) ---
+  # Nécessite d'ajouter le container prom/mysqld-exporter au compose
+  # - job_name: "mysql"
+  #   static_configs:
+  #     - targets: ["mysql-exporter:9104"]
+  #       labels:
+  #         service: "mysql"
+
+  # --- Redis Exporter (optionnel) ---
+  # Nécessite d'ajouter le container oliver006/redis_exporter au compose
+  # - job_name: "redis"
+  #   static_configs:
+  #     - targets: ["redis-exporter:9121"]
+  #       labels:
+  #         service: "redis"

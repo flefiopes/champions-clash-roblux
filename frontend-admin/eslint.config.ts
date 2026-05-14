@@ -27,6 +27,7 @@ export default tseslint.config(
         WebSocket: 'readonly',
         Event: 'readonly',
         CustomEvent: 'readonly',
+        console: 'readonly',
       },
     },
   },

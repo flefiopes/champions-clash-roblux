@@ -102,7 +102,7 @@ export interface Transaction {
   type: 'coin_gain' | 'coin_spend' | 'gem_gain' | 'gem_spend' | 'point_contribution' | 'xp_gain';
   amount: number;
   source: string;
-  meta: any;
+  meta: Record<string, unknown> | null;
   createdAt: string;
 }
 

@@ -1,106 +1,91 @@
-# Template API Frontend
+# Champions Clash — Admin Dashboard
 
-Production-ready frontend application built with Vue 3 and Vite. Designed for rapid development with a focus on maintainability, type safety, and modern UI practices.
+Administrative control center for the Champions Clash 2027 project. This dashboard provides the tools necessary for managing the live game environment, monitoring player activity, and configuring seasonal warfare.
 
----
+## Technical Stack
 
-## Tech Stack
+| Component      | Technology                           |
+|----------------|--------------------------------------|
+| Framework      | Vue 3 (Composition API)              |
+| Build Tool     | Vite                                 |
+| Language       | TypeScript                           |
+| Styling        | Tailwind CSS v4 & PrimeVue           |
+| UI Components  | PrimeVue                             |
+| State          | Pinia                                |
+| Router         | Vue Router                           |
+| HTTP Client    | Axios                                |
+| Icons          | Lucide Vue Next                      |
 
-| Layer         | Technology                          |
-|---------------|-------------------------------------|
-| Framework     | Vue 3 (Composition API)             |
-| Build Tool    | Vite                                |
-| Language      | TypeScript (strict mode)            |
-| Styling       | Tailwind CSS v4 + PrimeUI           |
-| Components    | PrimeVue                            |
-| State         | Pinia                               |
-| Router        | Vue Router                          |
-| HTTP Client   | Axios                               |
-| Icons         | PrimeIcons                          |
-| Validation    | Zod (via shared types/validation)   |
-| Linter        | ESLint 10 + Prettier                |
+## Core Modules
 
----
+### War & Faction Management
+Control the lifecycle of competitive seasons. Create new wars, define faction properties (names, colors, images), and manually conclude active seasons.
 
-## Architecture
+### Real-time Game Config
+Adjust game parameters on the fly. Manage multipliers, feature flags, and global settings that are instantly reflected in game servers via the backend's hot-reloading configuration system.
 
-```
+### Product Catalog
+Manage the in-game shop items, including currency packages and boosters. Update pricing and descriptions without deploying new code.
+
+### Transactions & Analytics
+Monitor global economic health through transaction logs and aggregate statistics for mini-games and player progression.
+
+## Project Structure
+
+```text
 src/
-  assets/        # Static assets (images, fonts, global CSS/Tailwind)
-  components/    # Reusable Vue components (UI and specialized)
-  composables/   # Vue composition API functions (hooks)
-  layouts/       # Page layout wrappers (e.g. AuthLayout, MainLayout)
-  lib/           # Shared utilities (API client interceptors, helpers)
-  router/        # Vue router configuration and route guards
-  stores/        # Pinia state management stores
-  types/         # Shared TypeScript type definitions
-  views/         # Main application route pages
-  App.vue        # Root Vue component
-  main.ts        # Application entry point and bootstrapping
+├── assets/      # Static resources and global styles
+├── components/  # Reusable UI components and feature-specific modules
+├── composables/ # Shared Vue composition logic (hooks)
+├── layouts/     # Page layout definitions
+├── lib/         # API client, utilities, and toast configurations
+├── router/      # Navigation logic and route guards
+├── stores/      # Pinia state management (Auth, Config, UI)
+├── types/       # TypeScript interface and type definitions
+├── validation/  # Zod schemas for form validation
+└── views/       # Main page components
 ```
 
----
+## Security
 
-## Security & Best Practices
+The dashboard uses a key-based authentication mechanism.
+- The `X-Admin-Key` must be provided during login.
+- The key is securely persisted in local storage and automatically attached to all API requests.
+- Unauthorized responses (401/403) trigger an automatic session cleanup and redirect to the login page.
 
-- **Strict Type Safety**: TypeScript with strict mode enabled.
-- **Composition API**: Leverage Vue's latest features for predictable and modular logic.
-- **API Interceptors**: Axios configured for robust central error handling and token management.
-- **Route Guards**: Protection of sensitive routes using Vue Router before guards.
-- **Component Design**: Separation of concerns with smart (views) and dumb (components) components.
-- **Environment Driven**: Isolated configuration using `.env` variables for different environments.
+## Development Guide
 
----
-
-## Setup
-
-### Prerequisites
-
-- [Bun](https://bun.sh) (latest)
-- Backend API running (see `backend/README.md`)
+### Setup
+1.  Copy `.env.example` to `.env`.
+2.  Configure `VITE_API_URL` to point to your running backend instance.
 
 ### Installation
+Ensure you have [Bun](https://bun.sh) installed.
 
 ```bash
 # Install dependencies
 bun install
 
-# Copy and configure environment
-cp .env.example .env
-# Edit .env with your local backend API URL if needed
-
 # Start development server
 bun run dev
 ```
 
----
+### Build & Quality
+```bash
+# Production build
+bun run build
 
-## Scripts
+# Type checking
+bun run typecheck
 
-| Command              | Description                              |
-|----------------------|------------------------------------------|
-| `bun run dev`        | Start development server with hot reload (Vite) |
-| `bun run build`      | Typecheck and build for production       |
-| `bun run preview`    | Locally preview production build         |
-| `bun run typecheck`  | Run TypeScript type checking (`vue-tsc`) |
-| `bun run lint`       | ESLint static code analysis              |
-| `bun run lint:fix`   | ESLint auto-fix common issues            |
-| `bun run format`     | Format code with Prettier                |
-
----
+# Linting and formatting
+bun run lint
+bun run format
+```
 
 ## Environment Variables
 
-All variables are documented in `.env.example`.
-
-| Key                        | Description                                  | Default                 |
-|----------------------------|----------------------------------------------|-------------------------|
-| `BASE_URL`                 | Application base URL                         | `http://localhost:5173` |
-| `VITE_API_URL`             | Backend API base URL (without trailing slash)| `http://localhost:3000` |
-| `VITE_USE_SECURE_COOKIE`   | Set to `true` to mandate secure cookies in prod | `false`                 |
-
----
-
-## License
-
-Unlicensed template. Adapt to your project requirements.
+| Variable       | Description                                  | Default                 |
+|----------------|----------------------------------------------|-------------------------|
+| VITE_API_URL   | Base URL for the Backend API                 | http://localhost:3000   |
+| BASE_URL       | Public URL of the dashboard                  | http://localhost:5173   |

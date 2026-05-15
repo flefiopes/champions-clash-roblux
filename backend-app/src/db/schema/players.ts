@@ -23,13 +23,13 @@ export const players = mysqlTable('players', {
   username: varchar('username', { length: 100 }).notNull(),
 
   /** Soft currency — earned from mini-games and daily bonuses */
-  coins: int('coins').notNull().default(0),
+  coins: bigint('coins', { mode: 'number' }).notNull().default(0),
 
   /** Hard currency — purchased with Robux */
-  gems: int('gems').notNull().default(0),
+  gems: bigint('gems', { mode: 'number' }).notNull().default(0),
 
   /** Total XP accumulated across all activities */
-  xp: int('xp').notNull().default(0),
+  xp: bigint('xp', { mode: 'number' }).notNull().default(0),
 
   /** Player rank within their faction, derived from alltime_points */
   rank: mysqlEnum('rank', [

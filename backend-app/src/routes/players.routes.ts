@@ -81,6 +81,13 @@ export const playerRoutes = new Elysia({ prefix: '/players' })
    * Grants coins to a player after a validated in-game action (mini-game, daily login, etc.).
    * Rate-limited per player to prevent farming.
    */
+  .use(
+    rateLimit({
+      keyPrefix: 'coin_gain',
+      maxRequests: getEnvConfig().rateLimit.robloxCoinGainMax,
+      windowSeconds: getEnvConfig().rateLimit.robloxCoinGainWindowSeconds,
+    })
+  )
   .post('/:robloxId/coins', async ({ params, body, set }) => {
     const paramParsed = RobloxIdParam.safeParse(params);
     const bodyParsed = CoinTransactionSchema.safeParse(body);

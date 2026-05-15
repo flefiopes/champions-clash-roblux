@@ -2,6 +2,7 @@ export interface War {
   id: string;
   name: string;
   resetWeekly: boolean;
+  scheduledAt: string | null;
   endsAt: string | null;
   status: 'active' | 'paused' | 'finished';
   createdAt: string;
@@ -11,6 +12,7 @@ export interface War {
 export interface CreateWarDto {
   name: string;
   reset_weekly: boolean;
+  scheduled_at?: string | null;
   ends_at?: string | null;
 }
 
@@ -18,6 +20,7 @@ export interface UpdateWarDto {
   name?: string;
   status?: 'active' | 'paused' | 'finished';
   reset_weekly?: boolean;
+  scheduled_at?: string | null;
   ends_at?: string | null;
 }
 
@@ -149,7 +152,7 @@ export interface CreateQuestDto {
 export interface Transaction {
   id: string;
   playerId: string;
-  username?: string;
+  pseudo?: string;
   type:
     | 'coin_gain'
     | 'coin_spend'
@@ -206,4 +209,13 @@ export interface PaginatedResponse<T> {
     limit: number;
     totalPages: number;
   };
+}
+
+export interface Player {
+  id: string;
+  pseudo: string;
+  prestigeLevel: number;
+  xp: number;
+  coins: number;
+  rank: string;
 }

@@ -1,15 +1,20 @@
 <script setup lang="ts">
 import { useAdminStats, useAdminActivity } from '@/composables/use-admin-stats';
+import PageHeader from '@/components/common/PageHeader.vue';
+import AdminStatsCard from '@/components/common/AdminStatsCard.vue';
+import AdminCard from '@/components/common/AdminCard.vue';
 import {
   UsersIcon,
   SwordsIcon,
   ShieldIcon,
   FlagIcon,
-  ScrollText,
-  TrendingUp,
-  Coins,
-  Award,
-  Zap,
+  LayoutDashboardIcon,
+  HistoryIcon,
+  ScrollTextIcon,
+  CoinsIcon,
+  AwardIcon,
+  ZapIcon,
+  TrendingUpIcon,
 } from 'lucide-vue-next';
 
 const { data: stats, isLoading, isError } = useAdminStats();
@@ -17,198 +22,221 @@ const activityQuery = useAdminActivity();
 </script>
 
 <template>
-  <div class="space-y-6">
-    <div>
-      <h1 class="text-2xl font-bold tracking-tight text-white">Dashboard Overview</h1>
-      <p class="text-sm text-slate-400">Platform statistics and insights.</p>
-    </div>
+  <div class="space-y-8">
+    <PageHeader
+      title="Dashboard Overview"
+      subtitle="Statistiques globales et monitoring de l'activité plateforme."
+    >
+      <template #icon>
+        <LayoutDashboardIcon class="text-indigo-400" />
+      </template>
+    </PageHeader>
 
     <!-- Error State -->
-    <div v-if="isError" class="rounded-lg bg-red-500/10 p-4 text-red-400 border border-red-500/20">
-      Failed to load dashboard statistics.
-    </div>
-
-    <!-- Loading State -->
-    <div v-else-if="isLoading" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-      <div
-        v-for="i in 4"
-        :key="i"
-        class="animate-pulse rounded-xl border border-slate-800 bg-slate-900/50 p-6 h-32"
-      ></div>
+    <div
+      v-if="isError"
+      class="rounded-xl bg-red-500/10 p-6 text-red-400 border border-red-500/20 shadow-lg shadow-red-500/5"
+    >
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-red-500/20 rounded-lg">
+          <FlagIcon :size="20" />
+        </div>
+        <div>
+          <h3 class="font-bold">Erreur de chargement</h3>
+          <p class="text-sm opacity-80">
+            Impossible de récupérer les statistiques du tableau de bord.
+          </p>
+        </div>
+      </div>
     </div>
 
     <!-- Stats Grid -->
-    <div v-else-if="stats" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-      <!-- Total Users -->
-      <div
-        class="rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-sm relative overflow-hidden"
-      >
-        <div class="absolute -right-6 -top-6 rounded-full bg-indigo-500/10 p-8">
-          <UsersIcon class="h-8 w-8 text-indigo-400" />
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <AdminStatsCard
+        label="Joueurs Totaux"
+        :value="stats?.totalPlayers || 0"
+        :icon="UsersIcon"
+        icon-bg-class="bg-indigo-500/10"
+        icon-color-class="text-indigo-400"
+        :is-loading="isLoading"
+      />
+      <AdminStatsCard
+        label="Guerres Totales"
+        :value="stats?.totalWars || 0"
+        :icon="SwordsIcon"
+        icon-bg-class="bg-red-500/10"
+        icon-color-class="text-red-400"
+        :is-loading="isLoading"
+      />
+      <AdminStatsCard
+        label="Guerres Actives"
+        :value="stats?.activeWars || 0"
+        :icon="ShieldIcon"
+        icon-bg-class="bg-amber-500/10"
+        icon-color-class="text-amber-400"
+        :is-loading="isLoading"
+      />
+      <AdminStatsCard
+        label="Factions"
+        :value="stats?.totalFactions || 0"
+        :icon="FlagIcon"
+        icon-bg-class="bg-emerald-500/10"
+        icon-color-class="text-emerald-400"
+        :is-loading="isLoading"
+      />
+    </div>
+
+    <div class="grid gap-8 lg:grid-cols-3">
+      <!-- Activity Section -->
+      <div class="lg:col-span-2 space-y-4">
+        <div class="flex items-center gap-2 text-lg font-bold text-white px-2">
+          <HistoryIcon :size="20" class="text-indigo-400" />
+          <h2>Activité Récente</h2>
         </div>
-        <dt class="truncate text-sm font-medium text-slate-400">Joueurs Totaux</dt>
-        <dd class="mt-2 text-3xl font-semibold tracking-tight text-white">
-          {{ stats.totalPlayers }}
-        </dd>
+
+        <AdminCard no-padding>
+          <div v-if="activityQuery.isLoading.value" class="p-12 flex justify-center">
+            <ProgressSpinner />
+          </div>
+          <!-- Rest of activity list logic... -->
+        </AdminCard>
       </div>
 
-      <!-- Total Wars -->
-      <div
-        class="rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-sm relative overflow-hidden"
-      >
-        <div class="absolute -right-6 -top-6 rounded-full bg-red-500/10 p-8">
-          <SwordsIcon class="h-8 w-8 text-red-400" />
+      <div class="space-y-6">
+        <!-- Retention: DAU -->
+        <div
+          class="rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-sm relative overflow-hidden"
+        >
+          <dt class="truncate text-sm font-medium text-slate-400">Joueurs Actifs (24h)</dt>
+          <dd class="mt-2 text-3xl font-semibold tracking-tight text-indigo-400">
+            {{ stats?.dailyActiveUsers || 0 }}
+          </dd>
+          <p class="mt-1 text-xs text-slate-500">DAU (Daily Active Users)</p>
         </div>
-        <dt class="truncate text-sm font-medium text-slate-400">Guerres Totales</dt>
-        <dd class="mt-2 text-3xl font-semibold tracking-tight text-white">
-          {{ stats.totalWars }}
-        </dd>
-      </div>
 
-      <!-- Active Wars -->
-      <div
-        class="rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-sm relative overflow-hidden"
-      >
-        <div class="absolute -right-6 -top-6 rounded-full bg-amber-500/10 p-8">
-          <ShieldIcon class="h-8 w-8 text-amber-400" />
+        <!-- Retention: Avg Prestige -->
+        <div
+          class="rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-sm relative overflow-hidden"
+        >
+          <dt class="truncate text-sm font-medium text-slate-400">Prestige Moyen</dt>
+          <dd class="mt-2 text-3xl font-semibold tracking-tight text-amber-400">
+            {{ stats?.avgPrestige || 0 }}
+          </dd>
+          <p class="mt-1 text-xs text-slate-500">Progression globale</p>
         </div>
-        <dt class="truncate text-sm font-medium text-slate-400">Guerres Actives</dt>
-        <dd class="mt-2 text-3xl font-semibold tracking-tight text-white">
-          {{ stats.activeWars }}
-        </dd>
-      </div>
 
-      <!-- Total Factions -->
-      <div
-        class="rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-sm relative overflow-hidden"
-      >
-        <div class="absolute -right-6 -top-6 rounded-full bg-emerald-500/10 p-8">
-          <FlagIcon class="h-8 w-8 text-emerald-400" />
+        <!-- Retention: Active Quests -->
+        <div
+          class="rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-sm relative overflow-hidden"
+        >
+          <dt class="truncate text-sm font-medium text-slate-400">Quêtes en cours</dt>
+          <dd class="mt-2 text-3xl font-semibold tracking-tight text-emerald-400">
+            {{ stats?.activeQuests || 0 }}
+          </dd>
+          <p class="mt-1 text-xs text-slate-500">Engagement missions</p>
         </div>
-        <dt class="truncate text-sm font-medium text-slate-400">Factions Enregistrées</dt>
-        <dd class="mt-2 text-3xl font-semibold tracking-tight text-white">
-          {{ stats.totalFactions }}
-        </dd>
-      </div>
-
-      <!-- Retention: DAU -->
-      <div
-        class="rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-sm relative overflow-hidden"
-      >
-        <dt class="truncate text-sm font-medium text-slate-400">Joueurs Actifs (24h)</dt>
-        <dd class="mt-2 text-3xl font-semibold tracking-tight text-indigo-400">
-          {{ stats.dailyActiveUsers }}
-        </dd>
-        <p class="mt-1 text-xs text-slate-500">DAU (Daily Active Users)</p>
-      </div>
-
-      <!-- Retention: Avg Prestige -->
-      <div
-        class="rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-sm relative overflow-hidden"
-      >
-        <dt class="truncate text-sm font-medium text-slate-400">Prestige Moyen</dt>
-        <dd class="mt-2 text-3xl font-semibold tracking-tight text-amber-400">
-          {{ stats.avgPrestige }}
-        </dd>
-        <p class="mt-1 text-xs text-slate-500">Progression globale</p>
-      </div>
-
-      <!-- Retention: Active Quests -->
-      <div
-        class="rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-sm relative overflow-hidden"
-      >
-        <dt class="truncate text-sm font-medium text-slate-400">Quêtes en cours</dt>
-        <dd class="mt-2 text-3xl font-semibold tracking-tight text-emerald-400">
-          {{ stats.activeQuests }}
-        </dd>
-        <p class="mt-1 text-xs text-slate-500">Engagement missions</p>
       </div>
     </div>
 
     <!-- Monitoring: Recent Activity -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
       <!-- Recent Quest Completions -->
-      <div class="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
-        <div class="p-4 border-b border-slate-800 bg-slate-950 flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <ScrollText class="text-indigo-400" :size="18" />
-            <h3 class="font-bold text-white text-sm">Quêtes Récemment Complétées</h3>
-          </div>
-          <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest"
-            >Temps Réel</span
-          >
+      <div class="space-y-4">
+        <div class="flex items-center gap-2 text-lg font-bold text-white px-2">
+          <ScrollTextIcon :size="20" class="text-indigo-400" />
+          <h2>Quêtes Récemment Complétées</h2>
         </div>
-        <div class="p-4 space-y-4">
-          <div
-            v-for="quest in activityQuery.data.value?.recentQuests || []"
-            :key="quest.id"
-            class="flex items-center justify-between p-3 rounded-lg bg-slate-950 border border-slate-800 hover:border-indigo-500/30 transition-colors"
-          >
-            <div class="flex flex-col">
-              <span class="text-sm font-bold text-white">{{ quest.pseudo }}</span>
-              <span class="text-[10px] text-slate-500 font-mono">{{ quest.id }}</span>
-            </div>
-            <div class="text-right">
-              <div class="text-[10px] font-bold text-indigo-400 uppercase">Terminée</div>
-              <div class="text-[10px] text-slate-600">
-                {{ new Date(quest.completedAt).toLocaleTimeString() }}
+
+        <AdminCard no-padding>
+          <div class="p-4 space-y-4">
+            <div
+              v-for="quest in activityQuery.data.value?.recentQuests || []"
+              :key="quest.id"
+              class="flex items-center justify-between p-3 rounded-xl bg-slate-950/50 border border-slate-800 hover:border-indigo-500/30 transition-all"
+            >
+              <div class="flex flex-col">
+                <span class="text-sm font-bold text-white">{{ quest.pseudo }}</span>
+                <span class="text-[10px] text-slate-500 font-mono tracking-tighter">{{
+                  quest.id
+                }}</span>
+              </div>
+              <div class="text-right">
+                <div class="text-[10px] font-black text-indigo-400 uppercase tracking-widest">
+                  Terminée
+                </div>
+                <div class="text-[10px] text-slate-600 font-mono">
+                  {{ new Date(quest.completedAt).toLocaleTimeString() }}
+                </div>
               </div>
             </div>
+            <div
+              v-if="
+                !activityQuery.data.value?.recentQuests?.length && !activityQuery.isLoading.value
+              "
+              class="text-center py-12 text-slate-600 text-sm italic"
+            >
+              Aucune activité récente détectée.
+            </div>
           </div>
-          <div
-            v-if="!activityQuery.data.value?.recentQuests?.length"
-            class="text-center py-8 text-slate-600 text-xs"
-          >
-            Aucune activité récente détectée.
-          </div>
-        </div>
+        </AdminCard>
       </div>
 
       <!-- Recent Transactions -->
-      <div class="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
-        <div class="p-4 border-b border-slate-800 bg-slate-950 flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <TrendingUp class="text-emerald-400" :size="18" />
-            <h3 class="font-bold text-white text-sm">Économie & Flux</h3>
-          </div>
-          <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest"
-            >Derniers Échanges</span
-          >
+      <div class="space-y-4">
+        <div class="flex items-center gap-2 text-lg font-bold text-white px-2">
+          <TrendingUpIcon :size="20" class="text-emerald-400" />
+          <h2>Économie & Flux</h2>
         </div>
-        <div class="p-4 space-y-4">
-          <div
-            v-for="tx in activityQuery.data.value?.recentTransactions || []"
-            :key="tx.id"
-            class="flex items-center justify-between p-3 rounded-lg bg-slate-950 border border-slate-800 hover:border-emerald-500/30 transition-colors"
-          >
-            <div class="flex items-center gap-3">
-              <div
-                class="w-8 h-8 rounded bg-slate-900 border border-slate-800 flex items-center justify-center"
-              >
-                <Coins v-if="tx.type.includes('coin')" :size="14" class="text-amber-400" />
-                <Award v-else-if="tx.type.includes('badge')" :size="14" class="text-indigo-400" />
-                <Zap v-else :size="14" class="text-blue-400" />
+
+        <AdminCard no-padding>
+          <div class="p-4 space-y-4">
+            <div
+              v-for="tx in activityQuery.data.value?.recentTransactions || []"
+              :key="tx.id"
+              class="flex items-center justify-between p-3 rounded-xl bg-slate-950/50 border border-slate-800 hover:border-emerald-500/30 transition-all"
+            >
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-10 h-10 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center shadow-inner"
+                >
+                  <CoinsIcon v-if="tx.type.includes('coin')" :size="16" class="text-amber-400" />
+                  <AwardIcon
+                    v-else-if="tx.type.includes('badge')"
+                    :size="16"
+                    class="text-indigo-400"
+                  />
+                  <ZapIcon v-else :size="16" class="text-blue-400" />
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-sm font-bold text-white">{{ tx.pseudo }}</span>
+                  <span class="text-[9px] text-slate-500 uppercase font-black tracking-widest">{{
+                    tx.type.replace('_', ' ')
+                  }}</span>
+                </div>
               </div>
-              <div class="flex flex-col">
-                <span class="text-sm font-bold text-white">{{ tx.pseudo }}</span>
-                <span class="text-[9px] text-slate-500 uppercase">{{
-                  tx.type.replace('_', ' ')
-                }}</span>
+              <div class="text-right">
+                <div
+                  class="text-sm font-mono font-black"
+                  :class="tx.type.includes('gain') ? 'text-emerald-400' : 'text-rose-400'"
+                >
+                  {{ tx.type.includes('gain') ? '+' : '-' }}{{ tx.amount }}
+                </div>
+                <div class="text-[10px] text-slate-600 font-mono">
+                  {{ new Date(tx.createdAt).toLocaleTimeString() }}
+                </div>
               </div>
             </div>
-            <div class="text-right">
-              <div
-                class="text-sm font-mono font-bold"
-                :class="tx.type.includes('gain') ? 'text-emerald-400' : 'text-rose-400'"
-              >
-                {{ tx.type.includes('gain') ? '+' : '-' }}{{ tx.amount }}
-              </div>
-              <div class="text-[10px] text-slate-600">
-                {{ new Date(tx.createdAt).toLocaleTimeString() }}
-              </div>
+            <div
+              v-if="
+                !activityQuery.data.value?.recentTransactions?.length &&
+                !activityQuery.isLoading.value
+              "
+              class="text-center py-12 text-slate-600 text-sm italic"
+            >
+              Aucun échange récent.
             </div>
           </div>
-        </div>
+        </AdminCard>
       </div>
     </div>
   </div>

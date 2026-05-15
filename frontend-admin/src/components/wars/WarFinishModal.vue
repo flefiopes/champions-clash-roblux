@@ -29,8 +29,10 @@ const confirmFinish = async () => {
   try {
     await finishWar.mutateAsync(props.war.id);
     close();
-  } catch (error) {
-    console.error('Erreur lors de la finition de la guerre', error);
+  } catch (_error) {
+    import('@/lib/toast').then(({ showErrorToast }) => {
+      showErrorToast('Erreur lors de la clôture de la guerre');
+    });
   } finally {
     isSubmitting.value = false;
   }

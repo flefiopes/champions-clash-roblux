@@ -73,7 +73,9 @@ const onSubmit = handleSubmit(async (values) => {
 
         <div class="space-y-4">
           <div>
-            <label for="adminKey" class="mb-2 block text-sm font-medium text-slate-300"
+            <label
+for="adminKey"
+class="mb-2 block text-sm font-medium text-slate-300"
               >Admin Key</label
             >
             <Password

@@ -3,8 +3,12 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { RouterView } from 'vue-router';
 import AdminSidebar from './AdminSidebar.vue';
 import AdminTopbar from './AdminTopbar.vue';
+import { useInactivityLogout } from '@/composables/useInactivityLogout';
 
 const isSidebarOpen = ref(true);
+
+// Initialize inactivity logout (1 hour timeout)
+useInactivityLogout();
 
 function toggleSidebar() {
   isSidebarOpen.value = !isSidebarOpen.value;

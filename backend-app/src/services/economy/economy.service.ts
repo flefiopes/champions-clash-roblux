@@ -14,6 +14,7 @@ import { players, transactions, playerFactions, factions, activeBoosts } from '@
 import { createChildLogger } from '@/lib/logger';
 import { AppError, AppErrorCode } from '@/lib/app-error';
 import type { ActiveBoostData } from '@/types';
+import { invalidateWarCaches } from '@/services/war/war.service';
 
 /** Economy service logger */
 const logger = createChildLogger({ module: 'economy-service' });
@@ -23,7 +24,7 @@ const COIN_TO_POINT_RATE = 10; // 100 coins = 10 points
 
 /**
  * Adds coins to a player's balance and records a transaction.
- * The caller is responsible for enforcing per-action rate limits before invoking this.
+ * Uses an atomic database transaction to ensure consistency.
  *
  * @param playerId - Internal player UUID
  * @param amount - Positive number of coins to add
@@ -39,34 +40,36 @@ export async function addCoins(
 ): Promise<number> {
   const db = getDatabase();
 
-  await db
-    .update(players)
-    .set({ coins: sql`${players.coins} + ${amount}` })
-    .where(eq(players.id, playerId));
+  return await db.transaction(async (tx) => {
+    await tx
+      .update(players)
+      .set({ coins: sql`${players.coins} + ${amount}` })
+      .where(eq(players.id, playerId));
 
-  await db.insert(transactions).values({
-    id: randomUUID(),
-    playerId,
-    type: 'coin_gain',
-    amount,
-    source,
-    meta: meta ?? null,
+    await tx.insert(transactions).values({
+      id: randomUUID(),
+      playerId,
+      type: 'coin_gain',
+      amount,
+      source,
+      meta: meta ?? null,
+    });
+
+    const updated = await tx
+      .select({ coins: players.coins })
+      .from(players)
+      .where(eq(players.id, playerId))
+      .limit(1);
+
+    const newBalance = updated[0]?.coins ?? 0;
+    logger.debug({ playerId, amount, source, newBalance }, 'Coins added (transactional)');
+    return newBalance;
   });
-
-  const updated = await db
-    .select({ coins: players.coins })
-    .from(players)
-    .where(eq(players.id, playerId))
-    .limit(1);
-
-  const newBalance = updated[0]?.coins ?? 0;
-
-  logger.debug({ playerId, amount, source, newBalance }, 'Coins added');
-  return newBalance;
 }
 
 /**
  * Adds XP to a player's profile and records a transaction.
+ * Uses an atomic database transaction.
  *
  * @param playerId - Internal player UUID
  * @param amount - Amount of XP to add
@@ -76,34 +79,36 @@ export async function addCoins(
 export async function addXp(playerId: string, amount: number, source: string): Promise<number> {
   const db = getDatabase();
 
-  await db
-    .update(players)
-    .set({ xp: sql`${players.xp} + ${amount}` })
-    .where(eq(players.id, playerId));
+  return await db.transaction(async (tx) => {
+    await tx
+      .update(players)
+      .set({ xp: sql`${players.xp} + ${amount}` })
+      .where(eq(players.id, playerId));
 
-  await db.insert(transactions).values({
-    id: randomUUID(),
-    playerId,
-    type: 'xp_gain',
-    amount,
-    source,
-    meta: null,
+    await tx.insert(transactions).values({
+      id: randomUUID(),
+      playerId,
+      type: 'xp_gain',
+      amount,
+      source,
+      meta: null,
+    });
+
+    const updated = await tx
+      .select({ xp: players.xp })
+      .from(players)
+      .where(eq(players.id, playerId))
+      .limit(1);
+
+    const newBalance = updated[0]?.xp ?? 0;
+    logger.debug({ playerId, amount, source, newBalance }, 'XP added (transactional)');
+    return newBalance;
   });
-
-  const updated = await db
-    .select({ xp: players.xp })
-    .from(players)
-    .where(eq(players.id, playerId))
-    .limit(1);
-
-  const newBalance = updated[0]?.xp ?? 0;
-
-  logger.debug({ playerId, amount, source, newBalance }, 'XP added');
-  return newBalance;
 }
 
 /**
  * Deducts coins from a player's balance.
+ * Uses an atomic SQL update with balance check in WHERE clause to prevent race conditions.
  * Throws INSUFFICIENT_COINS if the player cannot afford the cost.
  *
  * @param playerId - Internal player UUID
@@ -118,42 +123,53 @@ export async function spendCoins(
 ): Promise<number> {
   const db = getDatabase();
 
-  const playerRow = await db
-    .select({ coins: players.coins })
-    .from(players)
-    .where(eq(players.id, playerId))
-    .limit(1);
+  return await db.transaction(async (tx) => {
+    // Atomic update: only proceed if coins >= amount
+    const result = await tx
+      .update(players)
+      .set({ coins: sql`${players.coins} - ${amount}` })
+      .where(and(eq(players.id, playerId), sql`${players.coins} >= ${amount}`));
 
-  if (!playerRow.length || playerRow[0]!.coins < amount) {
-    throw new AppError(AppErrorCode.INSUFFICIENT_COINS, 'Insufficient coin balance', 400, {
-      required: amount,
-      current: playerRow[0]?.coins ?? 0,
+    // rowsAffected check for Drizzle MySQL
+    if (result[0].affectedRows === 0) {
+      // Fetch current balance for a better error message
+      const playerRow = await tx
+        .select({ coins: players.coins })
+        .from(players)
+        .where(eq(players.id, playerId))
+        .limit(1);
+
+      throw new AppError(AppErrorCode.INSUFFICIENT_COINS, 'Insufficient coin balance', 400, {
+        required: amount,
+        current: playerRow[0]?.coins ?? 0,
+      });
+    }
+
+    await tx.insert(transactions).values({
+      id: randomUUID(),
+      playerId,
+      type: 'coin_spend',
+      amount,
+      source,
+      meta: null,
     });
-  }
 
-  await db
-    .update(players)
-    .set({ coins: sql`${players.coins} - ${amount}` })
-    .where(eq(players.id, playerId));
+    const updated = await tx
+      .select({ coins: players.coins })
+      .from(players)
+      .where(eq(players.id, playerId))
+      .limit(1);
 
-  await db.insert(transactions).values({
-    id: randomUUID(),
-    playerId,
-    type: 'coin_spend',
-    amount,
-    source,
-    meta: null,
+    const newBalance = updated[0]?.coins ?? 0;
+    logger.debug({ playerId, amount, source, newBalance }, 'Coins spent (atomic transaction)');
+    return newBalance;
   });
-
-  const newBalance = (playerRow[0]!.coins ?? 0) - amount;
-  logger.debug({ playerId, amount, source, newBalance }, 'Coins spent');
-  return newBalance;
 }
 
 /**
  * Converts coins to faction points in a single atomic operation.
- * Validates coin balance, deducts coins, increments both weekly and all-time faction points,
- * increments faction total_points, and logs the transaction.
+ * Validates coin balance via atomic SQL check, deducts coins, increments both
+ * weekly and all-time faction points, increments faction total_points, and logs transaction.
  *
  * @param playerId - Internal player UUID
  * @param coinsSpent - Number of coins to convert
@@ -169,85 +185,94 @@ export async function contributePoints(
 ): Promise<{ newCoinBalance: number; pointsAwarded: number }> {
   const db = getDatabase();
 
-  // Verify the player is a member of the specified faction in this war
-  const membership = await db
-    .select({ weeklyPoints: playerFactions.weeklyPoints })
-    .from(playerFactions)
-    .where(
-      and(
-        eq(playerFactions.playerId, playerId),
-        eq(playerFactions.factionId, factionId),
-        eq(playerFactions.warId, warId)
+  return await db.transaction(async (tx) => {
+    // 1. Verify membership
+    const membership = await tx
+      .select({ weeklyPoints: playerFactions.weeklyPoints })
+      .from(playerFactions)
+      .where(
+        and(
+          eq(playerFactions.playerId, playerId),
+          eq(playerFactions.factionId, factionId),
+          eq(playerFactions.warId, warId)
+        )
       )
-    )
-    .limit(1);
+      .limit(1);
 
-  if (!membership.length) {
-    throw new AppError(
-      AppErrorCode.INVALID_FACTION,
-      'Player is not a member of this faction',
-      400,
-      { playerId, factionId, warId }
+    if (!membership.length) {
+      throw new AppError(
+        AppErrorCode.INVALID_FACTION,
+        'Player is not a member of this faction',
+        400,
+        { playerId, factionId, warId }
+      );
+    }
+
+    // 2. Atomic coin deduction
+    const deductResult = await tx
+      .update(players)
+      .set({ coins: sql`${players.coins} - ${coinsSpent}` })
+      .where(and(eq(players.id, playerId), sql`${players.coins} >= ${coinsSpent}`));
+
+    if (deductResult[0].affectedRows === 0) {
+      const playerRow = await tx
+        .select({ coins: players.coins })
+        .from(players)
+        .where(eq(players.id, playerId))
+        .limit(1);
+
+      throw new AppError(
+        AppErrorCode.INSUFFICIENT_COINS,
+        'Insufficient coin balance for point contribution',
+        400,
+        { required: coinsSpent, current: playerRow[0]?.coins ?? 0 }
+      );
+    }
+
+    const pointsAwarded = Math.floor(coinsSpent / 100) * COIN_TO_POINT_RATE;
+
+    // 3. Increment player's weekly and all-time contribution
+    await tx
+      .update(playerFactions)
+      .set({
+        weeklyPoints: sql`${playerFactions.weeklyPoints} + ${pointsAwarded}`,
+        alltimePoints: sql`${playerFactions.alltimePoints} + ${pointsAwarded}`,
+      })
+      .where(and(eq(playerFactions.playerId, playerId), eq(playerFactions.warId, warId)));
+
+    // 4. Increment faction aggregate
+    await tx
+      .update(factions)
+      .set({ totalPoints: sql`${factions.totalPoints} + ${pointsAwarded}` })
+      .where(eq(factions.id, factionId));
+
+    // 5. Record the transaction
+    await tx.insert(transactions).values({
+      id: randomUUID(),
+      playerId,
+      type: 'point_contribution',
+      amount: pointsAwarded,
+      source: 'point_contribution',
+      meta: { coins_spent: coinsSpent, faction_id: factionId, war_id: warId },
+    });
+
+    const updatedPlayer = await tx
+      .select({ coins: players.coins })
+      .from(players)
+      .where(eq(players.id, playerId))
+      .limit(1);
+
+    const newCoinBalance = updatedPlayer[0]?.coins ?? 0;
+
+    logger.info(
+      { playerId, factionId, warId, coinsSpent, pointsAwarded, newCoinBalance },
+      'Point contribution processed (atomic transaction)'
     );
-  }
 
-  // Check balance
-  const playerRow = await db
-    .select({ coins: players.coins })
-    .from(players)
-    .where(eq(players.id, playerId))
-    .limit(1);
+    await invalidateWarCaches(warId);
 
-  if (!playerRow.length || playerRow[0]!.coins < coinsSpent) {
-    throw new AppError(
-      AppErrorCode.INSUFFICIENT_COINS,
-      'Insufficient coin balance for point contribution',
-      400,
-      { required: coinsSpent, current: playerRow[0]?.coins ?? 0 }
-    );
-  }
-
-  const pointsAwarded = Math.floor(coinsSpent / 100) * COIN_TO_POINT_RATE;
-
-  // Deduct coins from player
-  await db
-    .update(players)
-    .set({ coins: sql`${players.coins} - ${coinsSpent}` })
-    .where(eq(players.id, playerId));
-
-  // Increment player's weekly and all-time contribution
-  await db
-    .update(playerFactions)
-    .set({
-      weeklyPoints: sql`${playerFactions.weeklyPoints} + ${pointsAwarded}`,
-      alltimePoints: sql`${playerFactions.alltimePoints} + ${pointsAwarded}`,
-    })
-    .where(and(eq(playerFactions.playerId, playerId), eq(playerFactions.warId, warId)));
-
-  // Increment faction aggregate
-  await db
-    .update(factions)
-    .set({ totalPoints: sql`${factions.totalPoints} + ${pointsAwarded}` })
-    .where(eq(factions.id, factionId));
-
-  // Record the transaction
-  await db.insert(transactions).values({
-    id: randomUUID(),
-    playerId,
-    type: 'point_contribution',
-    amount: pointsAwarded,
-    source: 'point_contribution',
-    meta: { coins_spent: coinsSpent, faction_id: factionId, war_id: warId },
+    return { newCoinBalance, pointsAwarded };
   });
-
-  const newCoinBalance = playerRow[0]!.coins - coinsSpent;
-
-  logger.info(
-    { playerId, factionId, warId, coinsSpent, pointsAwarded, newCoinBalance },
-    'Point contribution processed'
-  );
-
-  return { newCoinBalance, pointsAwarded };
 }
 
 /**

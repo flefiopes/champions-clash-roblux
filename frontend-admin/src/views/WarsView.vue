@@ -6,8 +6,11 @@ import Column from 'primevue/column';
 import Tag from 'primevue/tag';
 import ProgressSpinner from 'primevue/progressspinner';
 import Button from 'primevue/button';
+import PageHeader from '@/components/common/PageHeader.vue';
+import AdminCard from '@/components/common/AdminCard.vue';
 import WarFormModal from '@/components/wars/WarFormModal.vue';
 import WarFinishModal from '@/components/wars/WarFinishModal.vue';
+import { SwordsIcon } from 'lucide-vue-next';
 
 const { warsQuery } = useAdminWars();
 const {
@@ -50,17 +53,19 @@ const formatStatus = (status: string) => {
 
 <template>
   <div class="space-y-6">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold tracking-tight text-white">Saisons / Guerres</h1>
-      <Button
-        label="Nouvelle Guerre"
-        icon="pi pi-plus"
-        class="!bg-indigo-600 hover:!bg-indigo-500 !border-none"
-        @click="openCreateModal"
-      />
-    </div>
+    <PageHeader
+      title="Saisons / Guerres"
+      subtitle="Gestion des cycles de compétition et des événements programmés."
+      button-label="Nouvelle Guerre"
+      button-icon="pi pi-plus"
+      @action="openCreateModal"
+    >
+      <template #icon>
+        <SwordsIcon class="text-indigo-400" />
+      </template>
+    </PageHeader>
 
-    <div v-if="warsQuery.isLoading.value" class="flex justify-center p-8">
+    <div v-if="warsQuery.isLoading.value" class="flex justify-center p-12">
       <ProgressSpinner />
     </div>
 
@@ -71,7 +76,7 @@ const formatStatus = (status: string) => {
       Une erreur est survenue lors du chargement des données.
     </div>
 
-    <div v-else class="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden shadow-sm">
+    <AdminCard v-else no-padding>
       <DataTable
         :value="warsQuery.data.value || []"
         paginator
@@ -81,19 +86,44 @@ const formatStatus = (status: string) => {
         row-hover
       >
         <template #empty>
-          <div class="p-6 text-center text-slate-400">Aucune guerre trouvée.</div>
+          <div class="p-12 text-center text-slate-500 font-medium">Aucune guerre trouvée.</div>
         </template>
 
-        <Column field="id" header="ID" sortable style="width: 25%" />
-        <Column field="name" header="Nom de la Saison" sortable style="width: 25%" />
+        <Column
+field="id"
+header="ID"
+sortable
+style="width: 25%" />
+        <Column
+field="name"
+header="Nom de la Saison"
+sortable
+style="width: 25%">
+          <template #body="{ data }">
+            <span class="font-bold text-white">{{ data.name }}</span>
+          </template>
+        </Column>
         <Column field="createdAt" header="Date de Création" sortable>
           <template #body="{ data }">
-            {{ new Date(data.createdAt).toLocaleString('fr-FR') }}
+            <span class="text-slate-400 font-mono text-xs">
+              {{ new Date(data.createdAt).toLocaleString('fr-FR') }}
+            </span>
+          </template>
+        </Column>
+        <Column field="scheduledAt" header="Date de Début" sortable>
+          <template #body="{ data }">
+            <span class="text-slate-400 font-mono text-xs">
+              {{
+                data.scheduledAt ? new Date(data.scheduledAt).toLocaleString('fr-FR') : 'Immédiat'
+              }}
+            </span>
           </template>
         </Column>
         <Column field="endsAt" header="Date de Fin" sortable>
           <template #body="{ data }">
-            {{ data.endsAt ? new Date(data.endsAt).toLocaleString('fr-FR') : '-' }}
+            <span class="text-slate-400 font-mono text-xs">
+              {{ data.endsAt ? new Date(data.endsAt).toLocaleString('fr-FR') : '-' }}
+            </span>
           </template>
         </Column>
         <Column field="status" header="Statut" sortable>
@@ -126,7 +156,7 @@ const formatStatus = (status: string) => {
           </template>
         </Column>
       </DataTable>
-    </div>
+    </AdminCard>
 
     <!-- Modals -->
     <WarFormModal v-model:visible="isFormModalOpen" :war="selectedWar" />

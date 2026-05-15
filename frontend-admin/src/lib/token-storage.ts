@@ -1,11 +1,11 @@
 /**
  * Admin API Key storage utility.
- * Manages key persistence using localStorage.
+ * Manages key persistence using sessionStorage.
  *
  * @module lib/token-storage
  */
 
-/** LocalStorage key for the admin api key */
+/** SessionStorage key for the admin api key */
 const ADMIN_KEY = 'admin_api_key';
 
 /**
@@ -24,7 +24,7 @@ function isBrowser(): boolean {
  */
 export function getAdminKey(): string | null {
   if (!isBrowser()) return null;
-  return localStorage.getItem(ADMIN_KEY);
+  return sessionStorage.getItem(ADMIN_KEY);
 }
 
 /**
@@ -34,7 +34,7 @@ export function getAdminKey(): string | null {
  */
 export function setAdminKey(key: string): void {
   if (!isBrowser()) return;
-  localStorage.setItem(ADMIN_KEY, key);
+  sessionStorage.setItem(ADMIN_KEY, key);
 }
 
 /**
@@ -42,5 +42,5 @@ export function setAdminKey(key: string): void {
  */
 export function clearAdminKey(): void {
   if (!isBrowser()) return;
-  localStorage.removeItem(ADMIN_KEY);
+  sessionStorage.removeItem(ADMIN_KEY);
 }

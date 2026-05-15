@@ -22,6 +22,7 @@ const { createWar, updateWar } = useAdminWars();
 const form = ref({
   name: '',
   reset_weekly: true,
+  scheduled_at: null as Date | null,
   ends_at: null as Date | null,
 });
 
@@ -32,12 +33,14 @@ watch(
       form.value = {
         name: newWar.name,
         reset_weekly: newWar.resetWeekly,
+        scheduled_at: newWar.scheduledAt ? new Date(newWar.scheduledAt) : null,
         ends_at: newWar.endsAt ? new Date(newWar.endsAt) : null,
       };
     } else {
       form.value = {
         name: '',
         reset_weekly: true,
+        scheduled_at: null,
         ends_at: null,
       };
     }
@@ -62,6 +65,7 @@ const save = async () => {
       const dto: UpdateWarDto = {
         name: form.value.name,
         reset_weekly: form.value.reset_weekly,
+        scheduled_at: form.value.scheduled_at ? form.value.scheduled_at.toISOString() : null,
         ends_at: form.value.ends_at ? form.value.ends_at.toISOString() : null,
       };
       await updateWar.mutateAsync({ id: props.war.id, data: dto });
@@ -70,13 +74,16 @@ const save = async () => {
       const dto: CreateWarDto = {
         name: form.value.name,
         reset_weekly: form.value.reset_weekly,
+        scheduled_at: form.value.scheduled_at ? form.value.scheduled_at.toISOString() : null,
         ends_at: form.value.ends_at ? form.value.ends_at.toISOString() : null,
       };
       await createWar.mutateAsync(dto);
     }
     close();
-  } catch (error) {
-    console.error('Erreur lors de la sauvegarde', error);
+  } catch (_error) {
+    import('@/lib/toast').then(({ showErrorToast }) => {
+      showErrorToast('Erreur lors de la sauvegarde de la guerre');
+    });
   } finally {
     isSubmitting.value = false;
   }
@@ -109,6 +116,29 @@ const save = async () => {
         />
       </div>
 
+      <div class="flex flex-col gap-2">
+        <label
+for="scheduled_at"
+class="text-sm font-medium text-slate-300"
+          >Date de début (Optionnel)</label
+        >
+        <Calendar
+          id="scheduled_at"
+          v-model="form.scheduled_at"
+          show-time
+          hour-format="24"
+          date-format="dd/mm/yy"
+          class="w-full"
+          :pt="{
+            input: {
+              class: '!bg-slate-950 !border-slate-800 !text-white w-full',
+            },
+            panel: { class: 'bg-slate-900 border border-slate-800' },
+          }"
+        />
+        <small class="text-slate-500">Laissez vide pour un lancement immédiat.</small>
+      </div>
+
       <div class="flex items-center gap-2">
         <Checkbox v-model="form.reset_weekly" input-id="reset_weekly" binary />
         <label for="reset_weekly" class="text-sm text-slate-300 cursor-pointer">
@@ -117,7 +147,9 @@ const save = async () => {
       </div>
 
       <div class="flex flex-col gap-2">
-        <label for="ends_at" class="text-sm font-medium text-slate-300"
+        <label
+for="ends_at"
+class="text-sm font-medium text-slate-300"
           >Date de fin (Optionnel)</label
         >
         <Calendar

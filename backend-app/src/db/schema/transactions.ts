@@ -6,7 +6,7 @@
  * @module db/schema/transactions
  */
 
-import { mysqlTable, varchar, int, json, timestamp, mysqlEnum } from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, bigint, json, timestamp, mysqlEnum } from 'drizzle-orm/mysql-core';
 import { players } from './players';
 
 /**
@@ -36,7 +36,7 @@ export const transactions = mysqlTable('transactions', {
   ]).notNull(),
 
   /** Amount of currency moved (always positive; direction encoded in `type`) */
-  amount: int('amount').notNull(),
+  amount: bigint('amount', { mode: 'number' }).notNull(),
 
   /** Machine-readable source identifier (e.g. "minigame_race", "shop_multiplier") */
   source: varchar('source', { length: 100 }).notNull(),

@@ -21,6 +21,7 @@ import {
 import * as adminService from '@/services/admin/admin.service';
 import * as adminConfigService from '@/services/admin/admin-config.service';
 import * as adminRewardsService from '@/services/admin/admin-rewards.service';
+import * as adminPlayersService from '@/services/admin/admin-players.service';
 import { invalidateConfigCache } from '@/services/config/config.service';
 import {
   CreateWarSchema,
@@ -78,6 +79,11 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
   .get('/minigames', async () => {
     const stats = await adminService.getMinigameStats();
     return formatResponse(stats);
+  })
+  /** GET /admin/leaderboard/players — Retrieve top players */
+  .get('/leaderboard/players', async () => {
+    const players = await adminPlayersService.getTopPlayers();
+    return formatResponse(players);
   })
 
   // ---------------------------------------------------------------------------

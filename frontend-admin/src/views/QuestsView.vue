@@ -8,7 +8,10 @@ import Tag from 'primevue/tag';
 import InputText from 'primevue/inputtext';
 import ProgressSpinner from 'primevue/progressspinner';
 import { FilterMatchMode } from '@primevue/core/api';
-import { ScrollText, Search, Trophy, Coins, Zap } from 'lucide-vue-next';
+import PageHeader from '@/components/common/PageHeader.vue';
+import AdminCard from '@/components/common/AdminCard.vue';
+import AdminStatsCard from '@/components/common/AdminStatsCard.vue';
+import { ScrollTextIcon, SearchIcon, TrophyIcon, CoinsIcon, ZapIcon } from 'lucide-vue-next';
 import QuestFormModal from '@/components/rewards/QuestFormModal.vue';
 
 import type { Quest, CreateQuestDto } from '@/types/admin.types';
@@ -67,54 +70,57 @@ const stats = computed(() => {
 </script>
 
 <template>
-  <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-      <div class="flex items-center gap-3">
-        <div class="p-3 rounded-2xl bg-indigo-500/10 text-indigo-400">
-          <ScrollText :size="24" />
-        </div>
-        <div>
-          <h1 class="text-2xl font-bold tracking-tight text-white">Gestion des Quêtes</h1>
-          <p class="text-slate-400 text-sm">
-            Définition des missions journalières et saisonnières.
-          </p>
-        </div>
-      </div>
+  <div class="space-y-8">
+    <PageHeader
+      title="Gestion des Quêtes"
+      subtitle="Définition des missions, objectifs d'engagement et récompenses de progression."
+      button-label="Nouvelle Quête"
+      button-icon="pi pi-plus"
+      @action="openCreateModal"
+    >
+      <template #icon>
+        <ScrollTextIcon class="text-indigo-400" />
+      </template>
+    </PageHeader>
 
-      <div class="flex items-center gap-4">
-        <div
-          class="flex items-center gap-4 px-4 py-2 rounded-xl bg-slate-900 border border-slate-800"
-        >
-          <div class="flex flex-col">
-            <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Total</span>
-            <span class="text-lg font-bold text-white">{{ stats.total }}</span>
-          </div>
-          <div class="w-px h-8 bg-slate-800"></div>
-          <div class="flex flex-col">
-            <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Daily</span>
-            <span class="text-lg font-bold text-blue-400">{{ stats.daily }}</span>
-          </div>
-        </div>
-        <Button
-          label="Nouvelle Quête"
-          icon="pi pi-plus"
-          class="!bg-indigo-600 !border-indigo-600 hover:!bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20"
-          @click="openCreateModal"
-        />
-      </div>
+    <!-- Stats Grid -->
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <AdminStatsCard
+        label="Missions Totales"
+        :value="stats.total"
+        :icon="ScrollTextIcon"
+        icon-bg-class="bg-indigo-500/10"
+        icon-color-class="text-indigo-400"
+        :is-loading="questsQuery.isLoading.value"
+      />
+      <AdminStatsCard
+        label="Quêtes Journalières"
+        :value="stats.daily"
+        :icon="ZapIcon"
+        icon-bg-class="bg-amber-500/10"
+        icon-color-class="text-amber-400"
+        :is-loading="questsQuery.isLoading.value"
+      />
+      <AdminStatsCard
+        label="Événements Saisonniers"
+        :value="stats.seasonal"
+        :icon="TrophyIcon"
+        icon-bg-class="bg-emerald-500/10"
+        icon-color-class="text-emerald-400"
+        :is-loading="questsQuery.isLoading.value"
+      />
     </div>
 
-    <!-- Filters -->
+    <!-- Filters & Search -->
     <div
-      class="flex items-center justify-between gap-4 p-4 rounded-xl bg-slate-900 border border-slate-800"
+      class="flex items-center justify-between gap-4 p-6 rounded-3xl bg-slate-900 border border-slate-800 shadow-xl shadow-black/20"
     >
       <div class="relative w-full max-w-md">
-        <Search class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" :size="18" />
+        <SearchIcon class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" :size="18" />
         <InputText
           v-model="filters['global'].value"
-          placeholder="Rechercher une quête..."
-          class="w-full !pl-10 !bg-slate-950 !border-slate-800"
+          placeholder="Filtrer par titre ou objectif..."
+          class="w-full !pl-12 !bg-slate-950 !border-slate-800 !text-white !rounded-xl !py-3"
         />
       </div>
     </div>
@@ -123,7 +129,7 @@ const stats = computed(() => {
       <ProgressSpinner />
     </div>
 
-    <div v-else class="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden shadow-2xl">
+    <AdminCard v-else no-padding>
       <DataTable
         v-model:filters="filters"
         :value="questsQuery.data.value || []"
@@ -133,48 +139,61 @@ const stats = computed(() => {
         row-hover
         :global-filter-fields="['title', 'type', 'requirementType']"
       >
+        <template #empty>
+          <div class="p-20 text-center text-slate-600 flex flex-col items-center gap-4">
+            <ScrollTextIcon :size="64" class="opacity-10" />
+            <p class="max-w-xs mx-auto font-medium">
+              Aucune quête ne correspond à votre recherche.
+            </p>
+          </div>
+        </template>
+
         <Column field="title" header="Mission" sortable>
           <template #body="{ data }">
             <div class="flex flex-col">
-              <span class="font-bold text-white">{{ data.title }}</span>
-              <span class="text-xs text-slate-500 truncate max-w-xs">{{ data.description }}</span>
+              <span class="font-black text-white text-base tracking-tight">{{ data.title }}</span>
+              <span class="text-xs text-slate-500 font-medium truncate max-w-xs">{{
+                data.description
+              }}</span>
             </div>
           </template>
         </Column>
 
-        <Column field="type" header="Type" sortable>
+        <Column field="type" header="Cycle" sortable>
           <template #body="{ data }">
             <Tag
               :value="data.type.toUpperCase()"
               :severity="getQuestTypeSeverity(data.type)"
-              class="text-[10px]"
+              class="text-[10px] font-black tracking-widest px-3"
             />
           </template>
         </Column>
 
         <Column field="requirementType" header="Objectif" sortable>
           <template #body="{ data }">
-            <div class="flex items-center gap-2 text-xs">
-              <span class="text-slate-400">{{ data.requirementType }}:</span>
-              <span class="font-mono text-indigo-400 font-bold">{{ data.requirementValue }}</span>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-black text-slate-500 uppercase tracking-tighter"
+                >{{ data.requirementType }}:</span
+              >
+              <span class="font-black text-indigo-400 font-mono">{{ data.requirementValue }}</span>
             </div>
           </template>
         </Column>
 
         <Column header="Récompenses">
           <template #body="{ data }">
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2">
               <div
                 v-if="data.rewardCoins"
-                class="flex items-center gap-1 text-[10px] text-amber-400 font-bold bg-amber-500/5 px-2 py-0.5 rounded border border-amber-500/10"
+                class="flex items-center gap-1.5 text-[10px] text-amber-400 font-black bg-amber-400/10 px-3 py-1 rounded-lg border border-amber-400/20"
               >
-                <Coins :size="10" /> {{ data.rewardCoins }}
+                <CoinsIcon :size="10" /> {{ data.rewardCoins }}
               </div>
               <div
                 v-if="data.rewardXp"
-                class="flex items-center gap-1 text-[10px] text-emerald-400 font-bold bg-emerald-500/5 px-2 py-0.5 rounded border border-emerald-500/10"
+                class="flex items-center gap-1.5 text-[10px] text-emerald-400 font-black bg-emerald-400/10 px-3 py-1 rounded-lg border border-emerald-400/20"
               >
-                <Zap :size="10" /> {{ data.rewardXp }}
+                <ZapIcon :size="10" /> {{ data.rewardXp }}
               </div>
             </div>
           </template>
@@ -186,13 +205,13 @@ const stats = computed(() => {
               icon="pi pi-pencil"
               text
               rounded
-              class="!text-slate-500 hover:!text-indigo-400 hover:!bg-indigo-500/5"
+              class="!text-slate-500 hover:!text-indigo-400 hover:!bg-indigo-500/10 transition-all"
               @click="openEditModal(data)"
             />
           </template>
         </Column>
       </DataTable>
-    </div>
+    </AdminCard>
 
     <QuestFormModal
       v-model:visible="isModalOpen"
@@ -202,12 +221,12 @@ const stats = computed(() => {
     />
 
     <div
-      class="p-4 rounded-lg bg-blue-500/5 border border-blue-500/10 text-xs text-blue-400 flex items-center gap-3"
+      class="p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 text-xs text-indigo-400/60 flex items-center gap-4 shadow-inner"
     >
-      <Trophy :size="16" />
-      <span
-        >Note: Les modifications de quêtes sont appliquées en temps réel aux nouveaux joueurs ou
-        lors d'une nouvelle session.</span
+      <TrophyIcon :size="20" class="text-indigo-400 opacity-40" />
+      <span class="font-medium"
+        >Les modifications de quêtes sont synchronisées lors de la prochaine session des
+        joueurs.</span
       >
     </div>
   </div>

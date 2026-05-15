@@ -14,6 +14,7 @@ import { createChildLogger } from '@/lib/logger';
 import { AppError, AppErrorCode } from '@/lib/app-error';
 import type { ActiveWar, FactionScore, WarLeaderboard, LeaderboardEntry } from '@/types';
 import { getGameConfig } from '@/services/admin/admin-config.service';
+import { cacheGet, cacheSet, cacheDelete } from '@/lib/cache';
 
 /** War service logger */
 const logger = createChildLogger({ module: 'war-service' });
@@ -21,19 +22,50 @@ const logger = createChildLogger({ module: 'war-service' });
 /** Duration of the faction lock after joining (7 days in ms) */
 const FACTION_LOCK_MS = 7 * 24 * 60 * 60 * 1000;
 
+/** Cache keys and TTLs */
+export const CACHE_KEYS = {
+  ACTIVE_WARS: 'war:active_list',
+  LEADERBOARD: (warId: string) => `war:leaderboard:${warId}`,
+};
+
+const CACHE_TTL = {
+  ACTIVE_WARS: 60, // 1 minute
+  LEADERBOARD: 300, // 5 minutes
+};
+
+/**
+ * Invalidates all war-related caches.
+ * Should be called when scores or memberships change.
+ *
+ * @param warId - Optional war ID to invalidate a specific leaderboard
+ */
+export async function invalidateWarCaches(warId?: string): Promise<void> {
+  await cacheDelete(CACHE_KEYS.ACTIVE_WARS);
+  if (warId) {
+    await cacheDelete(CACHE_KEYS.LEADERBOARD(warId));
+  }
+}
+
 /**
  * Returns all active wars with their factions and current scores.
- * Used by the Roblox client for the faction selection screen and HUD.
+ * Results are cached in Redis to prevent heavy JOIN/GROUP queries.
  *
  * @returns List of active wars with faction details
  */
 export async function getActiveWars(): Promise<ActiveWar[]> {
+  // 1. Try cache first
+  const cached = await cacheGet<ActiveWar[]>(CACHE_KEYS.ACTIVE_WARS);
+  if (cached) return cached;
+
   const db = getDatabase();
   const config = await getGameConfig();
 
   const warRows = await db.select().from(wars).where(eq(wars.status, 'active'));
 
-  if (warRows.length === 0) return [];
+  if (warRows.length === 0) {
+    await cacheSet(CACHE_KEYS.ACTIVE_WARS, [], CACHE_TTL.ACTIVE_WARS);
+    return [];
+  }
 
   const warIds = warRows.map((w) => w.id);
 
@@ -80,7 +112,7 @@ export async function getActiveWars(): Promise<ActiveWar[]> {
   }
 
   // Calculate dynamic balancing (Rubber Banding)
-  return warRows.map((war) => {
+  const result = warRows.map((war) => {
     const warFactions = factionsByWar.get(war.id) ?? [];
     const totalWarPoints = warFactions.reduce((acc, f) => acc + f.totalPoints, 0);
 
@@ -108,18 +140,28 @@ export async function getActiveWars(): Promise<ActiveWar[]> {
       factions: enrichedFactions,
     };
   });
+
+  // 2. Save to cache
+  await cacheSet(CACHE_KEYS.ACTIVE_WARS, result, CACHE_TTL.ACTIVE_WARS);
+
+  return result;
 }
 
 /**
  * Returns the leaderboard for a specific war, grouped by faction.
- * Players are ranked by weekly_points descending within each faction.
+ * Results are cached to prevent repetitive heavy window/ordering queries.
  *
  * @param warId - War UUID
  * @param limit - Maximum entries per faction (default 100)
  * @returns War leaderboard grouped by faction
- * @throws AppError(WAR_NOT_FOUND) if the war does not exist
  */
 export async function getLeaderboard(warId: string, limit = 100): Promise<WarLeaderboard> {
+  const cacheKey = CACHE_KEYS.LEADERBOARD(warId);
+
+  // 1. Try cache first
+  const cached = await cacheGet<WarLeaderboard>(cacheKey);
+  if (cached) return cached;
+
   const db = getDatabase();
 
   const warRows = await db
@@ -173,6 +215,9 @@ export async function getLeaderboard(warId: string, limit = 100): Promise<WarLea
 
     result.factions.push({ factionId: faction.id, factionName: faction.name, entries: ranked });
   }
+
+  // 2. Save to cache
+  await cacheSet(cacheKey, result, CACHE_TTL.LEADERBOARD);
 
   return result;
 }
@@ -240,6 +285,7 @@ export async function joinFaction(
       .where(and(eq(playerFactions.playerId, playerId), eq(playerFactions.warId, warId)));
 
     logger.info({ playerId, factionId, warId }, 'Player switched faction after lock expiry');
+    await invalidateWarCaches(warId);
     return;
   }
 
@@ -251,6 +297,7 @@ export async function joinFaction(
     joinedAt: new Date(),
   });
 
+  await invalidateWarCaches(warId);
   logger.info({ playerId, factionId, warId }, 'Player joined faction');
 }
 
@@ -349,5 +396,8 @@ export async function performWeeklyReset(warId: string): Promise<string> {
     { warId, winnerFactionId, snapshotSize: snapshot.length },
     'Weekly war reset completed'
   );
+
+  await invalidateWarCaches(warId);
+
   return winnerFactionId;
 }

@@ -10,6 +10,7 @@ import {
   MenuIcon,
   Gamepad2Icon,
   ScrollTextIcon,
+  TrophyIcon,
 } from 'lucide-vue-next';
 
 const props = defineProps<{
@@ -24,6 +25,7 @@ const route = useRoute();
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboardIcon },
+  { name: 'Classement', href: '/leaderboard', icon: TrophyIcon },
   { name: 'Guerres', href: '/wars', icon: SwordsIcon },
   { name: 'Factions', href: '/factions', icon: ShieldIcon },
   { name: 'Mini-jeux', href: '/minigames', icon: Gamepad2Icon },

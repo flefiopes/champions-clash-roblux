@@ -31,13 +31,16 @@ export interface PurchaseResult {
 
 /**
  * Idempotently processes a Roblox purchase receipt.
+ * Uses an atomic database transaction to ensure that the reward grant and
+ * the idempotency record are created together.
  *
  * Flow:
  * 1. Validate the product exists and is active.
- * 2. Resolve the buyer's internal player ID (creates the player if needed).
- * 3. Check if purchaseId was already processed (idempotency guard).
- * 4. Apply the product effect (gems credit, boost activation, etc.).
- * 5. Record the receipt in processed_purchases.
+ * 2. Resolve the buyer's internal player ID.
+ * 3. Atomic Transaction:
+ *    a. Check if purchaseId was already processed (idempotency guard).
+ *    b. Apply the product effect (gems credit, boost activation, etc.).
+ *    c. Record the receipt in processed_purchases.
  *
  * @param robloxUserId - Roblox userId of the buyer
  * @param robloxProductId - Roblox product ID that was purchased
@@ -54,7 +57,7 @@ export async function processPurchase(
 ): Promise<PurchaseResult> {
   const db = getDatabase();
 
-  // Resolve product
+  // Resolve product (read-only, can stay outside transaction for performance)
   const productRows = await db
     .select()
     .from(products)
@@ -80,7 +83,7 @@ export async function processPurchase(
     );
   }
 
-  // Resolve player
+  // Resolve player (read-only, can stay outside transaction)
   const playerRows = await db
     .select({ id: players.id, gems: players.gems })
     .from(players)
@@ -100,100 +103,110 @@ export async function processPurchase(
 
   const player = playerRows[0]!;
 
-  // Idempotency check
-  const existing = await db
-    .select({ purchaseId: processedPurchases.purchaseId })
-    .from(processedPurchases)
-    .where(
-      and(eq(processedPurchases.purchaseId, purchaseId), eq(processedPurchases.playerId, player.id))
-    )
-    .limit(1);
+  // Execute entire grant logic in a transaction
+  return await db.transaction(async (tx) => {
+    // 1. Idempotency check
+    const existing = await tx
+      .select({ purchaseId: processedPurchases.purchaseId })
+      .from(processedPurchases)
+      .where(
+        and(
+          eq(processedPurchases.purchaseId, purchaseId),
+          eq(processedPurchases.playerId, player.id)
+        )
+      )
+      .limit(1);
 
-  if (existing.length > 0) {
+    if (existing.length > 0) {
+      logger.info(
+        { purchaseId, playerId: player.id },
+        'Purchase already processed — returning early (transactional check)'
+      );
+      return { alreadyProcessed: true };
+    }
+
+    // 2. Apply product effect
+    let newGemBalance: number | undefined;
+
+    switch (product.type) {
+      case 'gems': {
+        const value = product.value as GemsProductValue;
+        await tx
+          .update(players)
+          .set({ gems: sql`${players.gems} + ${value.gems}` })
+          .where(eq(players.id, player.id));
+
+        await tx.insert(transactions).values({
+          id: randomUUID(),
+          playerId: player.id,
+          type: 'gem_gain',
+          amount: value.gems,
+          source: `purchase_${robloxProductId}`,
+          meta: { purchase_id: purchaseId },
+        });
+
+        // Re-fetch balance for accuracy in response
+        const updatedPlayer = await tx
+          .select({ gems: players.gems })
+          .from(players)
+          .where(eq(players.id, player.id))
+          .limit(1);
+
+        newGemBalance = updatedPlayer[0]?.gems ?? 0;
+        break;
+      }
+
+      case 'boost': {
+        const value = product.value as BoostProductValue;
+        const expiresAt = new Date(Date.now() + value.duration_seconds * 1000);
+
+        await tx.insert(activeBoosts).values({
+          id: randomUUID(),
+          playerId: player.id,
+          type: value.boost,
+          multiplier: value.multiplier,
+          expiresAt,
+        });
+        break;
+      }
+
+      case 'faction_reset': {
+        logger.info(
+          { playerId: player.id },
+          'Faction reset purchase recorded (effect pending Phase 2)'
+        );
+        break;
+      }
+
+      case 'cosmetic': {
+        logger.info(
+          { playerId: player.id, productId: product.id },
+          'Cosmetic purchase recorded (effect pending Phase 3)'
+        );
+        break;
+      }
+
+      default: {
+        logger.warn(
+          { productType: product.type },
+          'Unknown product type — purchase recorded without effect'
+        );
+      }
+    }
+
+    // 3. Record receipt for idempotency
+    await tx.insert(processedPurchases).values({
+      purchaseId,
+      playerId: player.id,
+      robloxProductId,
+      robloxUserId,
+    });
+
     logger.info(
-      { purchaseId, playerId: player.id },
-      'Purchase already processed — returning early'
+      { purchaseId, playerId: player.id, robloxProductId, productType: product.type },
+      'Purchase processed successfully (atomic transaction)'
     );
-    return { alreadyProcessed: true };
-  }
 
-  // Apply product effect
-  let newGemBalance: number | undefined;
-
-  switch (product.type) {
-    case 'gems': {
-      const value = product.value as GemsProductValue;
-      await db
-        .update(players)
-        .set({ gems: sql`${players.gems} + ${value.gems}` })
-        .where(eq(players.id, player.id));
-
-      await db.insert(transactions).values({
-        id: randomUUID(),
-        playerId: player.id,
-        type: 'gem_gain',
-        amount: value.gems,
-        source: `purchase_${robloxProductId}`,
-        meta: { purchase_id: purchaseId },
-      });
-
-      newGemBalance = player.gems + value.gems;
-      break;
-    }
-
-    case 'boost': {
-      const value = product.value as BoostProductValue;
-      const expiresAt = new Date(Date.now() + value.duration_seconds * 1000);
-
-      await db.insert(activeBoosts).values({
-        id: randomUUID(),
-        playerId: player.id,
-        type: value.boost,
-        multiplier: value.multiplier,
-        expiresAt,
-      });
-      break;
-    }
-
-    case 'faction_reset': {
-      // Phase 2: Faction reset logic (remove the player's current faction lock)
-      // For now, the purchase is recorded but no effect is applied.
-      logger.info(
-        { playerId: player.id },
-        'Faction reset purchase recorded (effect pending Phase 2)'
-      );
-      break;
-    }
-
-    case 'cosmetic': {
-      // Phase 3: Cosmetic grant (stored in a future cosmetics table)
-      logger.info(
-        { playerId: player.id, productId: product.id },
-        'Cosmetic purchase recorded (effect pending Phase 3)'
-      );
-      break;
-    }
-
-    default: {
-      logger.warn(
-        { productType: product.type },
-        'Unknown product type — purchase recorded without effect'
-      );
-    }
-  }
-
-  // Record receipt for idempotency
-  await db.insert(processedPurchases).values({
-    purchaseId,
-    playerId: player.id,
-    robloxProductId,
-    robloxUserId,
+    return { alreadyProcessed: false, newGemBalance };
   });
-
-  logger.info(
-    { purchaseId, playerId: player.id, robloxProductId, productType: product.type },
-    'Purchase processed successfully'
-  );
-
-  return { alreadyProcessed: false, newGemBalance };
 }

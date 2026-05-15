@@ -12,6 +12,7 @@ import { getDatabase } from '@/db';
 import { wars, factions, transactions, players, playerQuests } from '@/db/schema';
 import { createChildLogger } from '@/lib/logger';
 import { AppError, AppErrorCode } from '@/lib/app-error';
+import { invalidateWarCaches } from '@/services/war/war.service';
 import type {
   CreateWarInput,
   UpdateWarInput,
@@ -158,11 +159,13 @@ export async function createWar(data: CreateWarInput, adminUsername: string): Pr
     id,
     name: data.name,
     resetWeekly: data.reset_weekly ?? true,
+    scheduledAt: data.scheduled_at ? new Date(data.scheduled_at) : null,
     endsAt: data.ends_at ? new Date(data.ends_at) : null,
     createdBy: adminUsername,
   });
 
   logger.info({ warId: id, name: data.name, adminUsername }, 'War created');
+  await invalidateWarCaches();
   return id;
 }
 
@@ -187,10 +190,14 @@ export async function updateWar(warId: string, data: UpdateWarInput): Promise<vo
       ...(data.name && { name: data.name }),
       ...(data.status && { status: data.status }),
       ...(data.reset_weekly !== undefined && { resetWeekly: data.reset_weekly }),
+      ...(data.scheduled_at !== undefined && {
+        scheduledAt: data.scheduled_at ? new Date(data.scheduled_at) : null,
+      }),
       ...(data.ends_at !== undefined && { endsAt: data.ends_at ? new Date(data.ends_at) : null }),
     })
     .where(eq(wars.id, warId));
 
+  await invalidateWarCaches(warId);
   logger.info({ warId, changes: data }, 'War updated');
 }
 
@@ -209,6 +216,7 @@ export async function finishWar(warId: string): Promise<void> {
   }
 
   await db.update(wars).set({ status: 'finished' }).where(eq(wars.id, warId));
+  await invalidateWarCaches(warId);
   logger.info({ warId }, 'War finished');
 }
 
@@ -256,6 +264,7 @@ export async function createFaction(data: CreateFactionInput): Promise<string> {
   });
 
   logger.info({ factionId: id, warId: data.war_id, name: data.name }, 'Faction created');
+  await invalidateWarCaches(data.war_id);
   return id;
 }
 
@@ -288,6 +297,16 @@ export async function updateFaction(factionId: string, data: UpdateFactionInput)
       ...(data.total_points !== undefined && { totalPoints: data.total_points }),
     })
     .where(eq(factions.id, factionId));
+
+  // Find warId to invalidate correct leaderboard
+  const updatedFaction = await db
+    .select({ warId: factions.warId })
+    .from(factions)
+    .where(eq(factions.id, factionId))
+    .limit(1);
+  if (updatedFaction.length > 0) {
+    await invalidateWarCaches(updatedFaction[0].warId);
+  }
 
   logger.info({ factionId, changes: data }, 'Faction updated');
 }
@@ -361,7 +380,7 @@ export async function getTransactionLogs(
       .select({
         id: transactions.id,
         playerId: transactions.playerId,
-        username: players.username,
+        pseudo: players.username,
         type: transactions.type,
         amount: transactions.amount,
         source: transactions.source,

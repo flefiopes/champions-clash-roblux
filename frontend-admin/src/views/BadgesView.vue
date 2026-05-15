@@ -6,7 +6,8 @@ import Tag from 'primevue/tag';
 import InputText from 'primevue/inputtext';
 import ProgressSpinner from 'primevue/progressspinner';
 import { FilterMatchMode } from '@primevue/core/api';
-import { Award, Search, ShieldCheck, Star } from 'lucide-vue-next';
+import PageHeader from '@/components/common/PageHeader.vue';
+import { AwardIcon, SearchIcon, ShieldCheckIcon, StarIcon } from 'lucide-vue-next';
 import BadgeFormModal from '@/components/rewards/BadgeFormModal.vue';
 
 import type { Badge, CreateBadgeDto } from '@/types/admin.types';
@@ -58,37 +59,29 @@ const getRarityColor = (rarity: string) => {
 </script>
 
 <template>
-  <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-      <div class="flex items-center gap-3">
-        <div class="p-3 rounded-2xl bg-amber-500/10 text-amber-400">
-          <Award :size="24" />
-        </div>
-        <div>
-          <h1 class="text-2xl font-bold tracking-tight text-white">Collection de Badges</h1>
-          <p class="text-slate-400 text-sm">Gestion des succès et objets de collection.</p>
-        </div>
-      </div>
+  <div class="space-y-8">
+    <PageHeader
+      title="Collection de Badges"
+      subtitle="Gestion des succès, raretés et objets de collection pour l'engagement des joueurs."
+      button-label="Nouveau Badge"
+      button-icon="pi pi-plus"
+      @action="openCreateModal"
+    >
+      <template #icon>
+        <AwardIcon class="text-amber-400" />
+      </template>
+    </PageHeader>
 
-      <Button
-        label="Nouveau Badge"
-        icon="pi pi-plus"
-        class="!bg-indigo-600 !border-indigo-600 hover:!bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20"
-        @click="openCreateModal"
-      />
-    </div>
-
-    <!-- Filters -->
+    <!-- Search Bar -->
     <div
-      class="flex items-center justify-between gap-4 p-4 rounded-xl bg-slate-900 border border-slate-800"
+      class="flex items-center justify-between gap-4 p-6 rounded-3xl bg-slate-900 border border-slate-800 shadow-xl shadow-black/20"
     >
       <div class="relative w-full max-w-md">
-        <Search class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" :size="18" />
+        <SearchIcon class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" :size="18" />
         <InputText
           v-model="filters['global'].value"
-          placeholder="Rechercher un badge..."
-          class="w-full !pl-10 !bg-slate-950 !border-slate-800"
+          placeholder="Rechercher par nom ou slug..."
+          class="w-full !pl-12 !bg-slate-950 !border-slate-800 !text-white !rounded-xl !py-3"
         />
       </div>
     </div>
@@ -97,19 +90,21 @@ const getRarityColor = (rarity: string) => {
       <ProgressSpinner />
     </div>
 
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
       <div
         v-for="badge in badgesQuery.data.value || []"
         :key="badge.id"
-        class="group p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-indigo-500/50 transition-all duration-300 relative overflow-hidden"
+        class="group p-8 rounded-3xl bg-slate-900 border border-slate-800 hover:border-indigo-500/50 transition-all duration-500 relative overflow-hidden shadow-lg hover:shadow-indigo-500/10"
       >
-        <div class="absolute -right-4 -top-4 opacity-10 group-hover:opacity-20 transition-opacity">
-          <Award :size="120" />
+        <div
+          class="absolute -right-6 -top-6 opacity-5 group-hover:opacity-10 transition-opacity rotate-12"
+        >
+          <AwardIcon :size="160" />
         </div>
 
-        <div class="flex items-start gap-4">
+        <div class="flex items-start gap-6 relative">
           <div
-            class="w-16 h-16 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden"
+            class="w-20 h-20 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden shadow-2xl group-hover:scale-105 transition-transform duration-500"
           >
             <img
               v-if="badge.imageUrl"
@@ -117,55 +112,64 @@ const getRarityColor = (rarity: string) => {
               :alt="badge.name"
               class="w-full h-full object-cover"
             />
-            <ShieldCheck v-else :size="32" class="text-slate-700" />
+            <ShieldCheckIcon v-else :size="32" class="text-slate-800" />
           </div>
 
           <div class="flex-1">
-            <div class="flex items-center justify-between mb-1">
-              <h3 class="font-bold text-white group-hover:text-indigo-400 transition-colors">
+            <div class="flex flex-col mb-2">
+              <div class="flex items-center justify-between">
+                <Tag
+                  :value="badge.rarity.toUpperCase()"
+                  class="!bg-transparent !p-0 !font-black !text-[10px] !tracking-widest"
+                  :class="getRarityColor(badge.rarity)"
+                />
+                <Button
+                  icon="pi pi-pencil"
+                  text
+                  rounded
+                  class="!text-slate-600 hover:!text-indigo-400 !w-8 !h-8"
+                  @click="openEditModal(badge)"
+                />
+              </div>
+              <h3
+                class="text-lg font-black text-white group-hover:text-indigo-400 transition-colors tracking-tight mt-1"
+              >
                 {{ badge.name }}
               </h3>
-              <Tag
-                :value="badge.rarity.toUpperCase()"
-                class="!bg-transparent !p-0"
-                :class="getRarityColor(badge.rarity)"
-              />
             </div>
-            <p class="text-xs text-slate-500 line-clamp-2 mb-4">
+
+            <p class="text-xs text-slate-500 font-medium line-clamp-2 leading-relaxed">
               {{ badge.description }}
             </p>
 
-            <div class="flex items-center justify-between mt-auto">
-              <div class="flex flex-col">
-                <span class="text-[10px] font-mono text-slate-600 uppercase tracking-widest">{{
-                  badge.slug
-                }}</span>
-                <div v-if="badge.isPermanent" class="flex items-center gap-1.5 mt-1">
-                  <Star :size="10" class="text-amber-400 fill-amber-400" />
-                  <span class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter"
-                    >Permanent</span
-                  >
-                </div>
-              </div>
+            <div class="flex items-center justify-between mt-6 pt-4 border-t border-slate-800/50">
+              <span
+                class="text-[9px] font-mono text-slate-600 uppercase font-black tracking-widest"
+                >{{ badge.slug }}</span
+              >
 
-              <Button
-                icon="pi pi-pencil"
-                text
-                rounded
-                class="!text-slate-500 hover:!text-indigo-400"
-                @click="openEditModal(badge)"
-              />
+              <div
+                v-if="badge.isPermanent"
+                class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20"
+              >
+                <StarIcon :size="10" class="text-amber-500 fill-amber-500" />
+                <span class="text-[9px] font-black text-amber-500 uppercase tracking-tighter"
+                  >Permanent</span
+                >
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       <div
-        v-if="!badgesQuery.data.value?.length"
-        class="col-span-full p-20 text-center rounded-2xl border-2 border-dashed border-slate-800"
+        v-if="!badgesQuery.data.value?.length && !badgesQuery.isLoading.value"
+        class="col-span-full p-20 text-center rounded-3xl border border-slate-800 bg-slate-900/50 flex flex-col items-center gap-4"
       >
-        <Award :size="48" class="text-slate-800 mx-auto mb-4" />
-        <p class="text-slate-500">Aucun badge configuré dans la base de données.</p>
+        <AwardIcon :size="64" class="text-slate-800 opacity-20" />
+        <p class="text-slate-600 font-medium italic">
+          Aucun badge configuré dans la base de données.
+        </p>
       </div>
     </div>
 

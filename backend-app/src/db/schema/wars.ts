@@ -25,6 +25,9 @@ export const wars = mysqlTable('wars', {
   /** Whether weekly score resets are applied (most wars) */
   resetWeekly: boolean('reset_weekly').notNull().default(true),
 
+  /** Optional scheduled start — if set, the war is considered 'pending' until this time */
+  scheduledAt: timestamp('scheduled_at'),
+
   /** Timestamp of the last weekly reset — compared against player last_seen for UI */
   lastResetAt: timestamp('last_reset_at'),
 

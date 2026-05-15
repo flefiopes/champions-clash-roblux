@@ -5,7 +5,10 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import ProgressSpinner from 'primevue/progressspinner';
 import Button from 'primevue/button';
+import PageHeader from '@/components/common/PageHeader.vue';
+import AdminCard from '@/components/common/AdminCard.vue';
 import FactionFormModal from '@/components/factions/FactionFormModal.vue';
+import { FlagIcon } from 'lucide-vue-next';
 
 const { factionsQuery } = useAdminFactions();
 const { isFormModalOpen, selectedFaction, openCreateModal, openEditModal } = useFactionModals();
@@ -13,28 +16,30 @@ const { isFormModalOpen, selectedFaction, openCreateModal, openEditModal } = use
 
 <template>
   <div class="space-y-6">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold tracking-tight text-white">Factions</h1>
-      <Button
-        label="Nouvelle Faction"
-        icon="pi pi-plus"
-        class="!bg-indigo-600 hover:!bg-indigo-500 !border-none"
-        @click="openCreateModal"
-      />
-    </div>
+    <PageHeader
+      title="Factions"
+      subtitle="Gestion des camps, des identités visuelles et des scores cumulés."
+      button-label="Nouvelle Faction"
+      button-icon="pi pi-plus"
+      @action="openCreateModal"
+    >
+      <template #icon>
+        <FlagIcon class="text-indigo-400" />
+      </template>
+    </PageHeader>
 
-    <div v-if="factionsQuery.isLoading.value" class="flex justify-center p-8">
+    <div v-if="factionsQuery.isLoading.value" class="flex justify-center p-12">
       <ProgressSpinner />
     </div>
 
     <div
       v-else-if="factionsQuery.isError.value"
-      class="text-red-400 p-4 bg-red-500/10 rounded-xl border border-red-500/20"
+      class="text-red-400 p-6 bg-red-500/10 rounded-xl border border-red-500/20 shadow-lg shadow-red-500/5"
     >
       Une erreur est survenue lors du chargement des données.
     </div>
 
-    <div v-else class="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden shadow-sm">
+    <AdminCard v-else no-padding>
       <DataTable
         :value="factionsQuery.data.value || []"
         paginator
@@ -44,35 +49,43 @@ const { isFormModalOpen, selectedFaction, openCreateModal, openEditModal } = use
         row-hover
       >
         <template #empty>
-          <div class="p-6 text-center text-slate-400">Aucune faction trouvée.</div>
+          <div class="p-12 text-center text-slate-500 font-medium">Aucune faction trouvée.</div>
         </template>
 
-        <Column field="name" header="Nom" sortable />
-        <Column field="warName" header="Guerre" sortable>
+        <Column field="name" header="Faction" sortable>
           <template #body="{ data }">
-            <span v-if="data.warName" class="text-slate-300">{{ data.warName }}</span>
-            <span v-else class="text-slate-500 italic">Inconnue</span>
+            <div class="flex items-center gap-3">
+              <div
+                class="w-3 h-3 rounded-full shadow-[0_0_8px_currentColor]"
+                :style="{ backgroundColor: data.colorHex, color: data.colorHex }"
+              ></div>
+              <span class="font-bold text-white">{{ data.name }}</span>
+            </div>
+          </template>
+        </Column>
+        <Column field="warName" header="Saison / Guerre" sortable>
+          <template #body="{ data }">
+            <span v-if="data.warName" class="text-slate-400 text-sm font-medium">{{
+              data.warName
+            }}</span>
+            <span v-else class="text-slate-600 italic text-sm">Orpheline</span>
           </template>
         </Column>
         <Column field="slogan" header="Slogan" sortable>
           <template #body="{ data }">
-            <span class="italic text-slate-400">"{{ data.slogan }}"</span>
+            <span class="italic text-slate-500 text-sm">"{{ data.slogan }}"</span>
           </template>
         </Column>
         <Column field="totalPoints" header="Points" sortable>
           <template #body="{ data }">
-            <span class="font-bold text-indigo-400">{{ data.totalPoints.toLocaleString() }}</span>
+            <span class="font-black text-indigo-400 font-mono tracking-tight">{{
+              data.totalPoints.toLocaleString()
+            }}</span>
           </template>
         </Column>
-        <Column header="Couleur">
+        <Column field="colorHex" header="Code Couleur" sortable>
           <template #body="{ data }">
-            <div class="flex items-center gap-2">
-              <div
-                class="w-4 h-4 rounded-full border border-slate-700"
-                :style="{ backgroundColor: data.colorHex }"
-              ></div>
-              <span>{{ data.colorHex }}</span>
-            </div>
+            <span class="font-mono text-slate-500 text-xs">{{ data.colorHex.toUpperCase() }}</span>
           </template>
         </Column>
 
@@ -91,7 +104,7 @@ const { isFormModalOpen, selectedFaction, openCreateModal, openEditModal } = use
           </template>
         </Column>
       </DataTable>
-    </div>
+    </AdminCard>
 
     <!-- Modals -->
     <FactionFormModal v-model:visible="isFormModalOpen" :faction="selectedFaction" />

@@ -1,7 +1,7 @@
 /**
  * Redis-backed sliding-window rate limiter.
  * Provides an Elysia plugin factory for per-route rate limiting using Redis.
- * Uses a sliding window counter pattern for accurate request throttling.
+ * Uses a sliding window counter pattern with atomic Redis Lua scripts.
  *
  * @module lib/rate-limiter
  */
@@ -10,6 +10,7 @@ import { Elysia } from 'elysia';
 import { getRedisClient } from '@/lib/redis';
 import { createChildLogger } from '@/lib/logger';
 import { formatErrorResponse } from './response-helpers';
+import { ip } from 'elysia-ip';
 
 /** Rate limiter logger */
 const logger = createChildLogger({ module: 'rate-limiter' });
@@ -27,49 +28,54 @@ export interface RateLimitConfig {
 }
 
 /**
- * Extracts the client identifier from the request for rate limiting.
- * Uses the X-Forwarded-For header if available, falls back to "unknown".
- *
- * @param request - The incoming HTTP request
- * @returns A string identifier for the client
+ * Lua script for atomic rate limiting.
+ * Increments the counter and sets expiration only on the first increment.
+ * Returns [currentCount, remainingTTL].
  */
-function getClientIdentifier(request: Request): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  if (forwarded) {
-    return forwarded.split(',')[0].trim();
-  }
-  return 'unknown';
-}
+const RATE_LIMIT_LUA = `
+local current = redis.call("INCR", KEYS[1])
+if current == 1 then
+    redis.call("EXPIRE", KEYS[1], ARGV[1])
+end
+local ttl = redis.call("TTL", KEYS[1])
+return {current, ttl}
+`;
 
 /**
  * Creates a rate limiter Elysia plugin with the given configuration.
- * Uses Redis INCR + EXPIRE for a fixed-window counter approach.
- * Returns 429 Too Many Requests with a Retry-After header when the limit is exceeded.
+ * Uses an atomic Lua script to prevent race conditions between INCR and EXPIRE.
+ * Uses elysia-ip (via ip context) for reliable client identification.
  *
  * @param config - Rate limiting configuration
  * @returns Elysia plugin with rate limiting middleware
  */
 export function rateLimit(config: RateLimitConfig) {
-  return new Elysia({ name: `rate-limit-${config.keyPrefix}` }).onBeforeHandle(
-    async ({ request, set }) => {
-      const clientId = getClientIdentifier(request);
+  return new Elysia({ name: `rate-limit-${config.keyPrefix}` })
+    .use(ip())
+    .onBeforeHandle(async ({ ip, set }) => {
+      // Use the IP extracted by elysia-ip middleware
+      const clientId = ip || 'unknown';
       const key = `ratelimit:${config.keyPrefix}:${clientId}`;
 
       try {
         const redis = getRedisClient();
-        const current = await redis.incr(key);
 
-        // Set TTL on first request in the window
-        if (current === 1) {
-          await redis.expire(key, config.windowSeconds);
-        }
+        // Execute atomic Lua script
+        const result = (await redis.eval(
+          RATE_LIMIT_LUA,
+          1,
+          key,
+          config.windowSeconds
+        )) as unknown as [number, number];
 
-        // Attach rate limit headers
-        const ttl = await redis.ttl(key);
+        const [current, ttl] = result;
+
+        // Attach standard rate limit headers
         set.headers['X-RateLimit-Limit'] = String(config.maxRequests);
         set.headers['X-RateLimit-Remaining'] = String(Math.max(0, config.maxRequests - current));
         set.headers['X-RateLimit-Reset'] = String(Math.ceil(Date.now() / 1000) + Math.max(ttl, 0));
 
+        // Check if limit exceeded
         if (current > config.maxRequests) {
           logger.warn({ clientId, key, current, limit: config.maxRequests }, 'Rate limit exceeded');
           set.status = 429;
@@ -77,9 +83,8 @@ export function rateLimit(config: RateLimitConfig) {
           return formatErrorResponse('RATE_LIMITED', 'Too many requests. Please try again later.');
         }
       } catch (error) {
-        // If Redis is down, allow the request through to avoid complete lockout
-        logger.error({ error }, 'Rate limiter Redis error — allowing request');
+        // Fail-open: if Redis is down, allow the request to prevent total lockout
+        logger.error({ error }, 'Rate limiter Redis error — allowing request (fail-open)');
       }
-    }
-  );
+    });
 }

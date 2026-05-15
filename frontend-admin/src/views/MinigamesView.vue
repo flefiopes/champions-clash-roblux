@@ -3,7 +3,8 @@ import { useAdminMinigames } from '@/composables/useAdminMinigames';
 import { useAdminConfig } from '@/composables/useAdminConfig';
 import ProgressSpinner from 'primevue/progressspinner';
 import ToggleSwitch from 'primevue/toggleswitch';
-import { Gamepad2, Coins, Activity } from 'lucide-vue-next';
+import { Gamepad2Icon, CoinsIcon, ActivityIcon } from 'lucide-vue-next';
+import PageHeader from '@/components/common/PageHeader.vue';
 
 import { ref } from 'vue';
 import Dialog from 'primevue/dialog';
@@ -59,38 +60,41 @@ const getGameStats = (gameId: string) => {
 </script>
 
 <template>
-  <div class="space-y-6">
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold tracking-tight text-white">Vision des Mini-Jeux</h1>
-        <p class="text-slate-400">Statut en temps réel et performance globale.</p>
-      </div>
-      <Button
-        label="Ajouter un Mini-jeu"
-        icon="pi pi-plus"
-        class="p-button-sm !bg-indigo-600 !border-indigo-600"
-        @click="isAddModalOpen = true"
-      />
-    </div>
+  <div class="space-y-8">
+    <PageHeader
+      title="Vision des Mini-Jeux"
+      subtitle="Statut en temps réel, limites de récompenses et performance globale par module."
+      button-label="Nouveau Module"
+      button-icon="pi pi-plus"
+      @action="isAddModalOpen = true"
+    >
+      <template #icon>
+        <Gamepad2Icon class="text-indigo-400" />
+      </template>
+    </PageHeader>
 
     <div
       v-if="configQuery.isLoading.value || minigamesQuery.isLoading.value"
-      class="flex justify-center p-8"
+      class="flex justify-center p-12"
     >
       <ProgressSpinner />
     </div>
 
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
       <div
         v-for="(settings, gameId) in configQuery.data.value?.minigames"
         :key="gameId"
-        class="group relative rounded-2xl border border-slate-800 bg-slate-900 p-6 transition-all hover:border-indigo-500/50 hover:shadow-lg hover:shadow-indigo-500/10"
+        class="group relative rounded-3xl border border-slate-800 bg-slate-900 p-8 transition-all hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/10 overflow-hidden"
       >
-        <div class="flex items-start justify-between mb-4">
+        <div
+          class="absolute -right-12 -top-12 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl group-hover:bg-indigo-500/10 transition-colors"
+        ></div>
+
+        <div class="flex items-start justify-between mb-6 relative">
           <div
-            class="p-3 rounded-xl bg-indigo-500/10 text-indigo-400 group-hover:scale-110 transition-transform"
+            class="p-4 rounded-2xl bg-indigo-500/10 text-indigo-400 group-hover:scale-110 transition-transform shadow-lg shadow-indigo-500/5"
           >
-            <Gamepad2 :size="24" />
+            <Gamepad2Icon :size="28" />
           </div>
           <ToggleSwitch
             :model-value="settings.enabled"
@@ -98,56 +102,67 @@ const getGameStats = (gameId: string) => {
           />
         </div>
 
-        <h3 class="text-xl font-bold text-white capitalize mb-1">
+        <h3 class="text-2xl font-black text-white capitalize mb-2 tracking-tight">
           {{ gameId }}
         </h3>
 
-        <div class="flex items-center gap-2 mb-6">
-          <span class="text-xs text-slate-500 uppercase font-bold tracking-wider"
-            >Limite Points:</span
+        <div class="flex items-center gap-3 mb-8">
+          <span class="text-[10px] text-slate-500 uppercase font-black tracking-widest"
+            >Anti-Cheat Cap:</span
           >
           <InputNumber
             :model-value="settings.max_reward"
-            class="w-20 p-inputtext-sm"
+            class="w-24"
             :min="0"
             :max="10000"
+            :pt="{
+              input: {
+                class: '!bg-slate-950 !border-slate-800 !text-white !font-bold !text-xs !py-1',
+              },
+            }"
             @update:model-value="(val) => updateMaxReward(gameId, settings, val || 0)"
           />
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
-          <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700/50">
-            <div class="flex items-center gap-2 text-slate-400 text-xs mb-1">
-              <Activity :size="14" />
-              Parties
+        <div class="grid grid-cols-2 gap-4 relative">
+          <div class="p-4 rounded-2xl bg-slate-950 border border-slate-800/50 flex flex-col gap-1">
+            <div
+              class="flex items-center gap-2 text-slate-500 text-[10px] font-black uppercase tracking-wider"
+            >
+              <ActivityIcon :size="12" class="text-indigo-400" />
+              Runs
             </div>
-            <div class="text-lg font-bold text-white">
+            <div class="text-xl font-black text-white font-mono">
               {{ getGameStats(gameId).totalRuns }}
             </div>
           </div>
-          <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700/50">
-            <div class="flex items-center gap-2 text-slate-400 text-xs mb-1">
-              <Coins :size="14" />
+          <div class="p-4 rounded-2xl bg-slate-950 border border-slate-800/50 flex flex-col gap-1">
+            <div
+              class="flex items-center gap-2 text-slate-500 text-[10px] font-black uppercase tracking-wider"
+            >
+              <CoinsIcon :size="12" class="text-amber-400" />
               Coins
             </div>
-            <div class="text-lg font-bold text-indigo-400">
+            <div class="text-xl font-black text-amber-400 font-mono">
               {{ getGameStats(gameId).totalCoins }}
             </div>
           </div>
         </div>
 
-        <div class="mt-6 flex items-center justify-between text-xs">
+        <div
+          class="mt-8 flex items-center justify-between text-[10px] font-black uppercase tracking-widest relative"
+        >
           <span
-            :class="settings.enabled ? 'text-green-400' : 'text-red-400'"
-            class="flex items-center gap-1 font-medium"
+            :class="settings.enabled ? 'text-emerald-400' : 'text-rose-400'"
+            class="flex items-center gap-2"
           >
             <span
-              class="w-1.5 h-1.5 rounded-full"
-              :class="settings.enabled ? 'bg-green-400' : 'bg-red-400'"
+              class="w-2 h-2 rounded-full animate-pulse shadow-[0_0_8px_currentColor]"
+              :class="settings.enabled ? 'bg-emerald-400' : 'bg-rose-400'"
             ></span>
-            {{ settings.enabled ? 'Actif' : 'Désactivé' }}
+            {{ settings.enabled ? 'Système Actif' : 'Désactivé' }}
           </span>
-          <span class="text-slate-500">Dernière mise à jour: Aujourd'hui</span>
+          <span class="text-slate-600 font-mono tracking-tighter">Live Monitor</span>
         </div>
       </div>
     </div>
@@ -157,35 +172,56 @@ const getGameStats = (gameId: string) => {
       v-model:visible="isAddModalOpen"
       modal
       header="Nouveau Mini-jeu"
-      :style="{ width: '350px' }"
+      :style="{ width: '30rem' }"
+      :pt="{
+        root: { class: 'bg-slate-900 border border-slate-800 rounded-3xl' },
+        header: { class: 'bg-slate-900 border-b border-slate-800 text-white font-black' },
+        content: { class: 'bg-slate-900 pt-8' },
+        footer: { class: 'bg-slate-900 border-t border-slate-800' },
+      }"
     >
-      <div class="space-y-4 pt-4">
+      <div class="space-y-6">
         <div class="flex flex-col gap-2">
-          <label for="game-id" class="text-sm font-medium text-slate-300"
+          <label
+for="game-id"
+class="text-xs font-black text-slate-500 uppercase tracking-widest"
             >Identifiant (Roblox)</label
           >
           <InputText
             id="game-id"
             v-model="newGame.id"
             placeholder="ex: race, combat..."
-            class="w-full"
+            class="w-full !bg-slate-950 !border-slate-800 !text-white !rounded-xl"
           />
         </div>
         <div class="flex flex-col gap-2">
-          <label for="max-reward" class="text-sm font-medium text-slate-300"
-            >Points Max (Anti-Cheat)</label
+          <label
+            for="max-reward"
+            class="text-xs font-black text-slate-500 uppercase tracking-widest"
+            >Récompense Max (Anti-Cheat)</label
           >
-          <InputNumber id="max-reward" v-model="newGame.max_reward" class="w-full" :min="10" />
+          <InputNumber
+            id="max-reward"
+            v-model="newGame.max_reward"
+            class="w-full"
+            :min="10"
+            :pt="{
+              input: { class: '!bg-slate-950 !border-slate-800 !text-white !rounded-xl' },
+            }"
+          />
         </div>
-        <div class="flex justify-end gap-3 mt-6">
+        <div class="flex justify-end gap-3 pt-4">
           <Button
             label="Annuler"
-            class="p-button-text !text-slate-400"
+            text
+            severity="secondary"
+            class="!text-slate-500 hover:!text-white"
             @click="isAddModalOpen = false"
           />
           <Button
-            label="Créer"
-            class="!bg-indigo-600 !border-indigo-600"
+            label="Enregistrer le Module"
+            icon="pi pi-check"
+            class="!bg-indigo-600 hover:!bg-indigo-500 !border-none !rounded-xl !px-6"
             :disabled="!newGame.id"
             @click="addMinigame"
           />

@@ -5,6 +5,9 @@ import InputNumber from 'primevue/inputnumber';
 import Checkbox from 'primevue/checkbox';
 import Button from 'primevue/button';
 import { ref, watch } from 'vue';
+import PageHeader from '@/components/common/PageHeader.vue';
+import AdminCard from '@/components/common/AdminCard.vue';
+import { SettingsIcon, ZapIcon, TrendingUpIcon, ShieldCheckIcon } from 'lucide-vue-next';
 
 const { configQuery, updateConfig } = useAdminConfig();
 
@@ -41,127 +44,185 @@ const saveConfig = () => {
 </script>
 
 <template>
-  <div class="space-y-6 max-w-3xl">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold tracking-tight text-white">Configuration du Jeu</h1>
-    </div>
+  <div class="space-y-8 max-w-4xl">
+    <PageHeader
+      title="Configuration du Jeu"
+      subtitle="Paramètres critiques de l'économie, de la progression et de l'équilibrage en temps réel."
+    >
+      <template #icon>
+        <SettingsIcon class="text-indigo-400" />
+      </template>
+    </PageHeader>
 
-    <div v-if="configQuery.isLoading.value" class="flex justify-center p-8">
+    <div v-if="configQuery.isLoading.value" class="flex justify-center p-12">
       <ProgressSpinner />
     </div>
 
     <div
       v-else-if="configQuery.isError.value"
-      class="text-red-400 p-4 bg-red-500/10 rounded-xl border border-red-500/20"
+      class="text-red-400 p-6 bg-red-500/10 rounded-2xl border border-red-500/20 shadow-lg"
     >
-      Une erreur est survenue lors du chargement des données.
+      Une erreur est survenue lors du chargement de la configuration globale.
     </div>
 
-    <div v-else class="rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-sm">
-      <form class="space-y-6" @submit.prevent="saveConfig">
-        <div class="space-y-4">
-          <div class="flex flex-col gap-2">
-            <label class="text-sm font-medium text-slate-300"
-              >Multiplicateur Global (XP/Coins)</label
-            >
-            <InputNumber
-              v-model="form.globalMultiplier"
-              input-id="globalMultiplier"
-              :min-fraction-digits="1"
-              :max-fraction-digits="2"
-              class="w-full sm:w-64 !bg-slate-950 !border-slate-800 !text-white"
-            />
-            <small class="text-slate-500"
-              >Applique un bonus à tous les joueurs (ex: 1.5 = +50%)</small
-            >
+    <div v-else class="space-y-8">
+      <form class="space-y-8" @submit.prevent="saveConfig">
+        <!-- Section: Core Economy -->
+        <AdminCard title="Économie & Progression">
+          <div class="grid gap-8 md:grid-cols-2">
+            <div class="flex flex-col gap-3">
+              <label
+                class="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"
+              >
+                <ZapIcon :size="14" class="text-amber-400" />
+                Multiplicateur Global
+              </label>
+              <InputNumber
+                v-model="form.globalMultiplier"
+                input-id="globalMultiplier"
+                :min-fraction-digits="1"
+                :max-fraction-digits="2"
+                class="w-full !bg-slate-950 !border-slate-800 !text-white !rounded-xl"
+              />
+              <p class="text-xs text-slate-500 font-medium leading-relaxed">
+                Applique un bonus multiplicateur à tous les gains d'XP et de Coins (ex: 1.5 = +50%).
+              </p>
+            </div>
+
+            <div class="flex flex-col gap-3">
+              <label
+                class="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"
+              >
+                <TrendingUpIcon :size="14" class="text-indigo-400" />
+                Niveau Maximum
+              </label>
+              <InputNumber
+                v-model="form.maxLevel"
+                input-id="maxLevel"
+                class="w-full !bg-slate-950 !border-slate-800 !text-white !rounded-xl"
+              />
+              <p class="text-xs text-slate-500 font-medium leading-relaxed">
+                Limite supérieure de la progression des personnages pour cette saison.
+              </p>
+            </div>
           </div>
 
-          <div class="flex flex-col gap-2">
-            <label class="text-sm font-medium text-slate-300">Niveau Maximum</label>
-            <InputNumber
-              v-model="form.maxLevel"
-              input-id="maxLevel"
-              class="w-full sm:w-64 !bg-slate-950 !border-slate-800 !text-white"
-            />
-          </div>
-
-          <div class="flex items-center gap-2 mt-6">
-            <Checkbox v-model="form.enablePurchases" input-id="enablePurchases" binary />
-            <label for="enablePurchases" class="text-slate-300"
-              >Activer les achats en Robux (Boutique)</label
+          <div class="grid gap-6 md:grid-cols-2 mt-8 pt-8 border-t border-slate-800/50">
+            <div
+              class="flex items-center gap-4 p-4 rounded-2xl bg-slate-950/50 border border-slate-800 hover:border-indigo-500/30 transition-colors"
             >
-          </div>
+              <Checkbox
+                v-model="form.enablePurchases"
+                input-id="enablePurchases"
+                binary
+                class="!w-6 !h-6"
+              />
+              <div class="flex flex-col">
+                <label
+for="enablePurchases"
+class="text-sm font-bold text-white tracking-tight"
+                  >Activer la Boutique</label
+                >
+                <span class="text-[10px] text-slate-500 font-medium"
+                  >Autorise les transactions Robux en jeu.</span
+                >
+              </div>
+            </div>
 
-          <div class="flex items-center gap-2">
-            <Checkbox
-              v-model="form.enablePointContributions"
-              input-id="enablePointContributions"
-              binary
-            />
-            <label for="enablePointContributions" class="text-slate-300"
-              >Activer les contributions de points aux guerres</label
+            <div
+              class="flex items-center gap-4 p-4 rounded-2xl bg-slate-950/50 border border-slate-800 hover:border-indigo-500/30 transition-colors"
             >
+              <Checkbox
+                v-model="form.enablePointContributions"
+                input-id="enablePointContributions"
+                binary
+                class="!w-6 !h-6"
+              />
+              <div class="flex flex-col">
+                <label
+                  for="enablePointContributions"
+                  class="text-sm font-bold text-white tracking-tight"
+                  >Flux de Points</label
+                >
+                <span class="text-[10px] text-slate-500 font-medium"
+                  >Active la contribution aux scores de faction.</span
+                >
+              </div>
+            </div>
           </div>
-        </div>
+        </AdminCard>
 
-        <div class="pt-6 border-t border-slate-800 space-y-6">
-          <h2 class="text-lg font-bold text-indigo-400">Rétention et Engagement</h2>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="flex flex-col gap-2">
-              <label class="text-sm font-medium text-slate-300"
-                >Quêtes Journalières par Joueur</label
+        <!-- Section: Engagement -->
+        <AdminCard title="Rétention & Engagement">
+          <div class="grid gap-8 md:grid-cols-2">
+            <div class="flex flex-col gap-3">
+              <label class="text-sm font-black text-slate-400 uppercase tracking-widest"
+                >Quêtes / Jour</label
               >
               <InputNumber
                 v-model="form.dailyQuestsCount"
                 :min="1"
                 :max="10"
-                class="w-full !bg-slate-950 !border-slate-800 !text-white"
+                class="w-full !bg-slate-950 !border-slate-800 !text-white !rounded-xl"
               />
-              <small class="text-slate-500"
-                >Nombre de missions assignées automatiquement chaque jour.</small
-              >
+              <p class="text-xs text-slate-500 font-medium">
+                Nombre de missions assignées automatiquement à chaque reset.
+              </p>
             </div>
 
-            <div class="flex flex-col gap-2">
-              <label class="text-sm font-medium text-slate-300"
-                >Taux de Collecte Idle (Coins/h)</label
+            <div class="flex flex-col gap-3">
+              <label class="text-sm font-black text-slate-400 uppercase tracking-widest"
+                >Base Idle (Coins/h)</label
               >
               <InputNumber
                 v-model="form.idleCoinBaseRate"
                 :min="0"
-                class="w-full !bg-slate-950 !border-slate-800 !text-white"
+                class="w-full !bg-slate-950 !border-slate-800 !text-white !rounded-xl"
               />
-              <small class="text-slate-500">Montant de base généré par heure d'absence.</small>
+              <p class="text-xs text-slate-500 font-medium">
+                Récompense passive générée pour les joueurs hors-ligne.
+              </p>
             </div>
           </div>
-        </div>
+        </AdminCard>
 
-        <div class="pt-6 border-t border-slate-800 space-y-6">
-          <h2 class="text-lg font-bold text-amber-400">Équilibrage Dynamique (Rubber-Banding)</h2>
-
-          <div class="flex flex-col gap-2">
-            <label class="text-sm font-medium text-slate-300">Multiplicateur de Rattrapage</label>
+        <!-- Section: Balancing -->
+        <AdminCard title="Équilibrage Dynamique">
+          <div class="flex flex-col gap-4">
+            <div class="flex items-center gap-3">
+              <div class="p-2 rounded-lg bg-amber-500/10 text-amber-400">
+                <ShieldCheckIcon :size="20" />
+              </div>
+              <label class="text-sm font-black text-slate-300 uppercase tracking-widest"
+                >Multiplicateur de Rattrapage</label
+              >
+            </div>
             <InputNumber
               v-model="form.rubberBandMultiplier"
               :min="1"
               :max="5"
               :min-fraction-digits="1"
               :max-fraction-digits="1"
-              class="w-full sm:w-64 !bg-slate-950 !border-slate-800 !text-white"
+              class="w-full md:w-1/2 !bg-slate-950 !border-slate-800 !text-white !rounded-xl"
             />
-            <small class="text-slate-500"
-              >Bonus appliqué aux factions à la traîne (ex: 1.5 = +50% de points).</small
-            >
+            <p class="text-xs text-slate-500 font-medium max-w-2xl leading-relaxed">
+              Le système de "Rubber-Banding" applique ce bonus aux factions ayant un retard
+              significatif pour maintenir l'engagement et la compétition (ex: 1.5 = +50% de points
+              générés).
+            </p>
           </div>
-        </div>
-        <div class="pt-4 border-t border-slate-800">
+        </AdminCard>
+
+        <!-- Action Button -->
+        <div
+          class="flex items-center justify-end p-8 bg-slate-900/50 rounded-3xl border border-slate-800/50 backdrop-blur-xl"
+        >
           <Button
             type="submit"
-            label="Enregistrer la configuration"
+            label="Déployer la Configuration"
             icon="pi pi-save"
             :loading="updateConfig.isPending.value"
-            class="!bg-indigo-600 hover:!bg-indigo-500 !border-none"
+            class="!bg-indigo-600 hover:!bg-indigo-500 !border-none !px-8 !py-3 !rounded-xl !font-black !tracking-widest !text-xs !shadow-lg shadow-indigo-600/20"
           />
         </div>
       </form>

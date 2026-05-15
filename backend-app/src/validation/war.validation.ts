@@ -14,7 +14,13 @@ export const CreateWarSchema = z.object({
   /** Display name of the war */
   name: z.string().min(2).max(150),
   /** Whether weekly score resets are applied */
+  /** Whether weekly score resets are applied */
   reset_weekly: z.boolean().default(true),
+  /**
+   * Optional scheduled start date.
+   * ISO 8601 string; if provided, the war is considered pending until this time.
+   */
+  scheduled_at: z.string().datetime({ offset: true }).nullable().optional(),
   /**
    * Optional scheduled end date.
    * ISO 8601 string; null means the war runs indefinitely until manually finished.
@@ -30,6 +36,7 @@ export const UpdateWarSchema = z.object({
   name: z.string().min(2).max(150).optional(),
   status: z.enum(['active', 'paused', 'finished']).optional(),
   reset_weekly: z.boolean().optional(),
+  scheduled_at: z.string().datetime({ offset: true }).nullable().optional(),
   ends_at: z.string().datetime({ offset: true }).nullable().optional(),
 });
 

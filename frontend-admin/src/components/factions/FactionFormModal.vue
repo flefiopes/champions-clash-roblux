@@ -100,8 +100,10 @@ const save = async () => {
       await createFaction.mutateAsync(dto);
     }
     close();
-  } catch (error) {
-    console.error('Erreur lors de la sauvegarde', error);
+  } catch (_error) {
+    import('@/lib/toast').then(({ showErrorToast }) => {
+      showErrorToast('Erreur lors de la sauvegarde de la faction');
+    });
   } finally {
     isSubmitting.value = false;
   }
@@ -155,7 +157,9 @@ const save = async () => {
       </div>
 
       <div class="flex flex-col gap-2">
-        <label for="slogan" class="text-sm font-medium text-slate-300"
+        <label
+for="slogan"
+class="text-sm font-medium text-slate-300"
           >Slogan (Cri de guerre)</label
         >
         <InputText
@@ -184,13 +188,17 @@ const save = async () => {
             }"
           ></div>
         </div>
-        <small v-if="!isValidHex(form.color_hex)" class="text-red-400"
+        <small
+v-if="!isValidHex(form.color_hex)"
+class="text-red-400"
           >Format invalide. Exemple: #DC143C</small
         >
       </div>
 
       <div v-if="faction" class="flex flex-col gap-2">
-        <label for="total_points" class="text-sm font-medium text-slate-300"
+        <label
+for="total_points"
+class="text-sm font-medium text-slate-300"
           >Points de la faction</label
         >
         <InputNumber

@@ -15,6 +15,7 @@ import { AppError, AppErrorCode } from '@/lib/app-error';
 import type { ActiveWar, FactionScore, WarLeaderboard, LeaderboardEntry } from '@/types';
 import { getGameConfig } from '@/services/admin/admin-config.service';
 import { cacheGet, cacheSet, cacheDelete } from '@/lib/cache';
+import { invalidatePlayerByPlayerId } from '@/services/player/player.service';
 
 /** War service logger */
 const logger = createChildLogger({ module: 'war-service' });
@@ -286,6 +287,8 @@ export async function joinFaction(
 
     logger.info({ playerId, factionId, warId }, 'Player switched faction after lock expiry');
     await invalidateWarCaches(warId);
+    // Invalidate player profile cache
+    await invalidatePlayerByPlayerId(playerId);
     return;
   }
 
@@ -298,6 +301,8 @@ export async function joinFaction(
   });
 
   await invalidateWarCaches(warId);
+  // Invalidate player profile cache
+  await invalidatePlayerByPlayerId(playerId);
   logger.info({ playerId, factionId, warId }, 'Player joined faction');
 }
 
@@ -398,6 +403,13 @@ export async function performWeeklyReset(warId: string): Promise<string> {
   );
 
   await invalidateWarCaches(warId);
+
+  // Invalidate all affected player profiles (since weeklyPoints were reset)
+  // Optimization: In a real high-scale scenario, we might use a pattern-based invalidation
+  // or let the 5-min TTL handle it, but for accuracy we invalidate the known contributors.
+  for (const player of snapshot) {
+    await invalidatePlayerByPlayerId(player.playerId);
+  }
 
   return winnerFactionId;
 }

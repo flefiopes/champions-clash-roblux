@@ -13,6 +13,7 @@ import { players, playerFactions, factions, wars } from '@/db/schema';
 import { createChildLogger } from '@/lib/logger';
 import { AppError, AppErrorCode } from '@/lib/app-error';
 import type { PlayerProfile, PlayerFactionSummary, PlayerRank } from '@/types';
+import { cacheGet, cacheSet, cacheDelete } from '@/lib/cache';
 
 /** Player service logger */
 const logger = createChildLogger({ module: 'player-service' });
@@ -22,6 +23,62 @@ const DAILY_QUIZ_LIMIT = 3;
 
 /** Maximum idle collection operations per player per day */
 const DAILY_IDLE_COLLECT_LIMIT = 1;
+
+/** Cache keys and TTL */
+const CACHE_KEYS = {
+  PROFILE: (robloxId: number) => `player:profile:robloxId:${robloxId}`,
+  ID_MAP: (playerId: string) => `player:map:id:${playerId}`,
+};
+
+const CACHE_TTL = 300; // 5 minutes
+
+/**
+ * Invalidates the cached profile of a player.
+ *
+ * @param robloxUserId - Roblox userId
+ */
+export async function invalidatePlayerCache(robloxUserId: number): Promise<void> {
+  await cacheDelete(CACHE_KEYS.PROFILE(robloxUserId));
+  logger.debug({ robloxUserId }, 'Player profile cache invalidated');
+}
+
+/**
+ * Resolves a Roblox userId from an internal player UUID.
+ * Uses a long-lived cache as this mapping never changes.
+ *
+ * @param playerId - Internal player UUID
+ * @returns Roblox userId or null if not found
+ */
+export async function getRobloxId(playerId: string): Promise<number | null> {
+  const cacheKey = CACHE_KEYS.ID_MAP(playerId);
+  const cached = await cacheGet<number>(cacheKey);
+  if (cached) return cached;
+
+  const db = getDatabase();
+  const rows = await db
+    .select({ robloxUserId: players.robloxUserId })
+    .from(players)
+    .where(eq(players.id, playerId))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+
+  const robloxId = rows[0]!.robloxUserId;
+  await cacheSet(cacheKey, robloxId, 86400 * 7); // 7 days cache for mapping
+  return robloxId;
+}
+
+/**
+ * Invalidates a player's profile cache using their internal playerId.
+ *
+ * @param playerId - Internal player UUID
+ */
+export async function invalidatePlayerByPlayerId(playerId: string): Promise<void> {
+  const robloxId = await getRobloxId(playerId);
+  if (robloxId) {
+    await invalidatePlayerCache(robloxId);
+  }
+}
 
 /**
  * Upserts a player record on login.
@@ -76,7 +133,10 @@ export async function loginOrCreate(robloxUserId: number, username: string): Pro
         loginStreak: newStreak,
         avgSessionHour: newAvg,
       })
-      .where(eq(players.robloxUserId, robloxUserId));
+      .where(eq(players.id, player.id));
+
+    // Invalidate cache since username or login state changed
+    await invalidatePlayerCache(robloxUserId);
 
     logger.debug(
       { robloxUserId, playerId: player.id, oldStreak: player.loginStreak, newStreak },
@@ -124,6 +184,14 @@ function calculateXpForLevel(level: number): number {
  * @throws AppError(PLAYER_NOT_FOUND) if no matching player exists
  */
 export async function getProfile(robloxUserId: number): Promise<PlayerProfile> {
+  // 1. Try cache first
+  const cacheKey = CACHE_KEYS.PROFILE(robloxUserId);
+  const cached = await cacheGet<PlayerProfile>(cacheKey);
+  if (cached) {
+    logger.debug({ robloxUserId }, 'Player profile cache hit');
+    return cached;
+  }
+
   const db = getDatabase();
 
   const playerRows = await db
@@ -169,7 +237,7 @@ export async function getProfile(robloxUserId: number): Promise<PlayerProfile> {
   const level = calculateLevel(player.xp);
   const nextLevelXp = calculateXpForLevel(level + 1);
 
-  return {
+  const profile: PlayerProfile = {
     id: player.id,
     robloxUserId: player.robloxUserId,
     username: player.username,
@@ -190,6 +258,11 @@ export async function getProfile(robloxUserId: number): Promise<PlayerProfile> {
     createdAt: player.createdAt,
     factions: factionList,
   };
+
+  // 2. Save to cache
+  await cacheSet(cacheKey, profile, CACHE_TTL);
+
+  return profile;
 }
 
 /**

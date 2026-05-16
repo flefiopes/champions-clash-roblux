@@ -15,9 +15,13 @@ import ProgressSpinner from 'primevue/progressspinner';
 import PageHeader from '@/components/common/PageHeader.vue';
 import AdminCard from '@/components/common/AdminCard.vue';
 import { TrophyIcon, UsersIcon, StarIcon, CoinsIcon, ShieldIcon } from 'lucide-vue-next';
+import { ref } from 'vue';
 
 const { playersLeaderboardQuery } = useAdminLeaderboard();
 const { factionsQuery } = useAdminFactions();
+
+const first = ref(0);
+const rows = ref(20);
 
 /**
  * Format large numbers for display.
@@ -149,7 +153,8 @@ class="text-xs font-bold"
         <DataTable
           :value="playersLeaderboardQuery.data.value || []"
           paginator
-          :rows="20"
+          v-model:first="first"
+          :rows="rows"
           data-key="id"
           class="p-datatable-sm w-full"
           row-hover
@@ -174,7 +179,7 @@ class="text-xs font-bold"
                         : 'text-slate-600'
                 "
               >
-                {{ index + 1 }}
+                {{ first + index + 1 }}
               </div>
             </template>
           </Column>

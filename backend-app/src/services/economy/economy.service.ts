@@ -15,6 +15,7 @@ import { createChildLogger } from '@/lib/logger';
 import { AppError, AppErrorCode } from '@/lib/app-error';
 import type { ActiveBoostData } from '@/types';
 import { invalidateWarCaches } from '@/services/war/war.service';
+import { invalidatePlayerByPlayerId } from '@/services/player/player.service';
 
 /** Economy service logger */
 const logger = createChildLogger({ module: 'economy-service' });
@@ -63,6 +64,10 @@ export async function addCoins(
 
     const newBalance = updated[0]?.coins ?? 0;
     logger.debug({ playerId, amount, source, newBalance }, 'Coins added (transactional)');
+    
+    // Invalidate player profile cache
+    await invalidatePlayerByPlayerId(playerId);
+
     return newBalance;
   });
 }
@@ -102,6 +107,10 @@ export async function addXp(playerId: string, amount: number, source: string): P
 
     const newBalance = updated[0]?.xp ?? 0;
     logger.debug({ playerId, amount, source, newBalance }, 'XP added (transactional)');
+
+    // Invalidate player profile cache
+    await invalidatePlayerByPlayerId(playerId);
+
     return newBalance;
   });
 }
@@ -162,6 +171,10 @@ export async function spendCoins(
 
     const newBalance = updated[0]?.coins ?? 0;
     logger.debug({ playerId, amount, source, newBalance }, 'Coins spent (atomic transaction)');
+
+    // Invalidate player profile cache
+    await invalidatePlayerByPlayerId(playerId);
+
     return newBalance;
   });
 }
@@ -270,6 +283,8 @@ export async function contributePoints(
     );
 
     await invalidateWarCaches(warId);
+    // Invalidate player profile cache
+    await invalidatePlayerByPlayerId(playerId);
 
     return { newCoinBalance, pointsAwarded };
   });

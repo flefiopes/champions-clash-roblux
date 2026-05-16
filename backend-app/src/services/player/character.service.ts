@@ -13,6 +13,7 @@ import { createChildLogger } from '@/lib/logger';
 import { AppError, AppErrorCode } from '@/lib/app-error';
 import { updateQuestProgress } from '@/services/quest/quest.service';
 import { getGameConfig } from '@/services/admin/admin-config.service';
+import { invalidatePlayerByPlayerId } from '@/services/player/player.service';
 
 /** Character service logger */
 const logger = createChildLogger({ module: 'character-service' });
@@ -81,6 +82,9 @@ export async function collectIdleCoins(
 
   const newBalance = (player.coins ?? 0) + awarded;
   logger.info({ playerId, awarded, newBalance }, 'Idle coins collected');
+
+  // Invalidate player profile cache
+  await invalidatePlayerByPlayerId(playerId);
 
   return { awarded, newBalance };
 }
@@ -160,6 +164,9 @@ export async function upgradeAttribute(
 
   const newBalance = (player.coins ?? 0) - cost;
   logger.info({ playerId, attribute, newLevel, cost }, 'Character attribute upgraded');
+
+  // Invalidate player profile cache
+  await invalidatePlayerByPlayerId(playerId);
 
   return { newLevel, newBalance };
 }

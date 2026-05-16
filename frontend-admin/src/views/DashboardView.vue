@@ -9,13 +9,13 @@ import {
   ShieldIcon,
   FlagIcon,
   LayoutDashboardIcon,
-  HistoryIcon,
   ScrollTextIcon,
   CoinsIcon,
   AwardIcon,
   ZapIcon,
   TrendingUpIcon,
 } from 'lucide-vue-next';
+import ProgressSpinner from 'primevue/progressspinner';
 
 const { data: stats, isLoading, isError } = useAdminStats();
 const activityQuery = useAdminActivity();
@@ -87,21 +87,110 @@ const activityQuery = useAdminActivity();
     </div>
 
     <div class="grid gap-8 lg:grid-cols-3">
-      <!-- Activity Section -->
-      <div class="lg:col-span-2 space-y-4">
-        <div class="flex items-center gap-2 text-lg font-bold text-white px-2">
-          <HistoryIcon :size="20" class="text-indigo-400" />
-          <h2>Activité Récente</h2>
+      <!-- Activity Section (Quests + Transactions) -->
+      <div class="lg:col-span-2 space-y-8">
+        <!-- Recent Quest Completions -->
+        <div class="space-y-4">
+          <div class="flex items-center gap-2 text-lg font-bold text-white px-2">
+            <ScrollTextIcon :size="20" class="text-indigo-400" />
+            <h2>Quêtes Récemment Complétées</h2>
+          </div>
+
+          <AdminCard no-padding>
+            <div v-if="activityQuery.isLoading.value" class="p-12 flex justify-center">
+              <ProgressSpinner />
+            </div>
+            <div v-else class="p-4 space-y-4">
+              <div
+                v-for="quest in activityQuery.data.value?.recentQuests || []"
+                :key="quest.id"
+                class="flex items-center justify-between p-3 rounded-xl bg-slate-950/50 border border-slate-800 hover:border-indigo-500/30 transition-all"
+              >
+                <div class="flex flex-col">
+                  <span class="text-sm font-bold text-white">{{ quest.pseudo }}</span>
+                  <span class="text-[10px] text-slate-500 font-mono tracking-tighter">{{
+                    quest.id
+                  }}</span>
+                </div>
+                <div class="text-right">
+                  <div class="text-[10px] font-black text-indigo-400 uppercase tracking-widest">
+                    Terminée
+                  </div>
+                  <div class="text-[10px] text-slate-600 font-mono">
+                    {{ new Date(quest.completedAt).toLocaleTimeString() }}
+                  </div>
+                </div>
+              </div>
+              <div
+                v-if="!activityQuery.data.value?.recentQuests?.length && !activityQuery.isLoading.value"
+                class="text-center py-12 text-slate-600 text-sm italic"
+              >
+                Aucune activité récente détectée.
+              </div>
+            </div>
+          </AdminCard>
         </div>
 
-        <AdminCard no-padding>
-          <div v-if="activityQuery.isLoading.value" class="p-12 flex justify-center">
-            <ProgressSpinner />
+        <!-- Recent Transactions -->
+        <div class="space-y-4">
+          <div class="flex items-center gap-2 text-lg font-bold text-white px-2">
+            <TrendingUpIcon :size="20" class="text-emerald-400" />
+            <h2>Économie & Flux</h2>
           </div>
-          <!-- Rest of activity list logic... -->
-        </AdminCard>
+
+          <AdminCard no-padding>
+            <div v-if="activityQuery.isLoading.value" class="p-12 flex justify-center">
+              <ProgressSpinner />
+            </div>
+            <div v-else class="p-4 space-y-4">
+              <div
+                v-for="tx in activityQuery.data.value?.recentTransactions || []"
+                :key="tx.id"
+                class="flex items-center justify-between p-3 rounded-xl bg-slate-950/50 border border-slate-800 hover:border-emerald-500/30 transition-all"
+              >
+                <div class="flex items-center gap-3">
+                  <div
+                    class="w-10 h-10 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center shadow-inner"
+                  >
+                    <CoinsIcon v-if="tx.type.includes('coin')" :size="16" class="text-amber-400" />
+                    <AwardIcon
+                      v-else-if="tx.type.includes('badge')"
+                      :size="16"
+                      class="text-indigo-400"
+                    />
+                    <ZapIcon v-else :size="16" class="text-blue-400" />
+                  </div>
+                  <div class="flex flex-col">
+                    <span class="text-sm font-bold text-white">{{ tx.pseudo }}</span>
+                    <span class="text-[9px] text-slate-500 uppercase font-black tracking-widest">{{
+                      tx.type.replace('_', ' ')
+                    }}</span>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div
+                    class="text-sm font-mono font-black"
+                    :class="tx.type.includes('gain') ? 'text-emerald-400' : 'text-rose-400'"
+                  >
+                    {{ tx.type.includes('gain') ? '+' : '-' }}{{ tx.amount }}
+                  </div>
+                  <div class="text-[10px] text-slate-600 font-mono">
+                    {{ new Date(tx.createdAt).toLocaleTimeString() }}
+                  </div>
+                </div>
+              </div>
+              <div
+                v-if="!activityQuery.data.value?.recentTransactions?.length && !activityQuery.isLoading.value"
+                class="text-center py-12 text-slate-600 text-sm italic"
+              >
+                Aucun échange récent.
+              </div>
+            </div>
+          </AdminCard>
+        </div>
       </div>
 
+      <!-- Sidebar Stats -->
       <div class="space-y-6">
         <!-- Retention: DAU -->
         <div
@@ -135,108 +224,6 @@ const activityQuery = useAdminActivity();
           </dd>
           <p class="mt-1 text-xs text-slate-500">Engagement missions</p>
         </div>
-      </div>
-    </div>
-
-    <!-- Monitoring: Recent Activity -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      <!-- Recent Quest Completions -->
-      <div class="space-y-4">
-        <div class="flex items-center gap-2 text-lg font-bold text-white px-2">
-          <ScrollTextIcon :size="20" class="text-indigo-400" />
-          <h2>Quêtes Récemment Complétées</h2>
-        </div>
-
-        <AdminCard no-padding>
-          <div class="p-4 space-y-4">
-            <div
-              v-for="quest in activityQuery.data.value?.recentQuests || []"
-              :key="quest.id"
-              class="flex items-center justify-between p-3 rounded-xl bg-slate-950/50 border border-slate-800 hover:border-indigo-500/30 transition-all"
-            >
-              <div class="flex flex-col">
-                <span class="text-sm font-bold text-white">{{ quest.pseudo }}</span>
-                <span class="text-[10px] text-slate-500 font-mono tracking-tighter">{{
-                  quest.id
-                }}</span>
-              </div>
-              <div class="text-right">
-                <div class="text-[10px] font-black text-indigo-400 uppercase tracking-widest">
-                  Terminée
-                </div>
-                <div class="text-[10px] text-slate-600 font-mono">
-                  {{ new Date(quest.completedAt).toLocaleTimeString() }}
-                </div>
-              </div>
-            </div>
-            <div
-              v-if="
-                !activityQuery.data.value?.recentQuests?.length && !activityQuery.isLoading.value
-              "
-              class="text-center py-12 text-slate-600 text-sm italic"
-            >
-              Aucune activité récente détectée.
-            </div>
-          </div>
-        </AdminCard>
-      </div>
-
-      <!-- Recent Transactions -->
-      <div class="space-y-4">
-        <div class="flex items-center gap-2 text-lg font-bold text-white px-2">
-          <TrendingUpIcon :size="20" class="text-emerald-400" />
-          <h2>Économie & Flux</h2>
-        </div>
-
-        <AdminCard no-padding>
-          <div class="p-4 space-y-4">
-            <div
-              v-for="tx in activityQuery.data.value?.recentTransactions || []"
-              :key="tx.id"
-              class="flex items-center justify-between p-3 rounded-xl bg-slate-950/50 border border-slate-800 hover:border-emerald-500/30 transition-all"
-            >
-              <div class="flex items-center gap-3">
-                <div
-                  class="w-10 h-10 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center shadow-inner"
-                >
-                  <CoinsIcon v-if="tx.type.includes('coin')" :size="16" class="text-amber-400" />
-                  <AwardIcon
-                    v-else-if="tx.type.includes('badge')"
-                    :size="16"
-                    class="text-indigo-400"
-                  />
-                  <ZapIcon v-else :size="16" class="text-blue-400" />
-                </div>
-                <div class="flex flex-col">
-                  <span class="text-sm font-bold text-white">{{ tx.pseudo }}</span>
-                  <span class="text-[9px] text-slate-500 uppercase font-black tracking-widest">{{
-                    tx.type.replace('_', ' ')
-                  }}</span>
-                </div>
-              </div>
-              <div class="text-right">
-                <div
-                  class="text-sm font-mono font-black"
-                  :class="tx.type.includes('gain') ? 'text-emerald-400' : 'text-rose-400'"
-                >
-                  {{ tx.type.includes('gain') ? '+' : '-' }}{{ tx.amount }}
-                </div>
-                <div class="text-[10px] text-slate-600 font-mono">
-                  {{ new Date(tx.createdAt).toLocaleTimeString() }}
-                </div>
-              </div>
-            </div>
-            <div
-              v-if="
-                !activityQuery.data.value?.recentTransactions?.length &&
-                !activityQuery.isLoading.value
-              "
-              class="text-center py-12 text-slate-600 text-sm italic"
-            >
-              Aucun échange récent.
-            </div>
-          </div>
-        </AdminCard>
       </div>
     </div>
   </div>
